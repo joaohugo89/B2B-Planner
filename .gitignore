@@ -1,0 +1,34 @@
+# DependÃªncias e builds
+node_modules/
+dist/
+target/
+
+# Segredos â€” nada aqui pode ir para o GitHub
+.env
+.env.*
+!.env.example
+*.pem
+*.key
+*.p12
+*.jks
+*.keystore
+secrets.json
+credentials.json
+
+# Dados locais
+.pgdata/
+.pgdata.log
+backend/uploads/
+backend/uploads.antes-*/
+logs/
+*.dump
+
+# Sistema e editores
+*.log
+.DS_Store
+Thumbs.db
+.idea/
+.vscode/
+
+# Fotos antes do redimensionamento (32 MB) — guarde em backup, não no repositório
+templates/originais/

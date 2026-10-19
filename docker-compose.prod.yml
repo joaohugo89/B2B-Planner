@@ -1,0 +1,73 @@
+# Exemplo de stack completa (backend + frontend + Postgres) para um host só.
+# Copie .env.prod.example para .env e preencha antes de subir:
+#   docker compose -f docker-compose.prod.yml --env-file .env up -d --build
+#
+# Num provedor que serve HTTPS na frente (Caddy, Traefik, o proxy do próprio PaaS),
+# aponte o domínio do frontend para a porta 8080 e o do backend para a 8081.
+
+services:
+  postgres:
+    image: postgres:16-alpine
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: ${DB_NAME:-jhcomp_planner}
+      POSTGRES_USER: ${DB_USER:?defina DB_USER}
+      POSTGRES_PASSWORD: ${DB_PASSWORD:?defina DB_PASSWORD}
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U $${POSTGRES_USER} -d $${POSTGRES_DB}"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+
+  backend:
+    build: ./backend
+    restart: unless-stopped
+    depends_on:
+      postgres:
+        condition: service_healthy
+    environment:
+      SPRING_PROFILES_ACTIVE: prod
+      SERVER_PORT: 8081
+      DB_URL: jdbc:postgresql://postgres:5432/${DB_NAME:-jhcomp_planner}
+      DB_USER: ${DB_USER}
+      DB_PASSWORD: ${DB_PASSWORD}
+      JWT_SECRET: ${JWT_SECRET:?defina JWT_SECRET}
+      JHCOMP_ENCRYPTION_KEY: ${JHCOMP_ENCRYPTION_KEY:?defina JHCOMP_ENCRYPTION_KEY}
+      CORS_ALLOWED_ORIGINS: ${CORS_ALLOWED_ORIGINS:?defina CORS_ALLOWED_ORIGINS}
+      # Uploads: disk usa o volume abaixo; s3 manda para o bucket e dispensa o volume.
+      ASSETS_STORAGE: ${ASSETS_STORAGE:-disk}
+      ASSETS_DIR: /app/uploads
+      ASSETS_S3_BUCKET: ${ASSETS_S3_BUCKET:-}
+      ASSETS_S3_REGION: ${ASSETS_S3_REGION:-auto}
+      ASSETS_S3_ENDPOINT: ${ASSETS_S3_ENDPOINT:-}
+      ASSETS_S3_ACCESS_KEY: ${ASSETS_S3_ACCESS_KEY:-}
+      ASSETS_S3_SECRET_KEY: ${ASSETS_S3_SECRET_KEY:-}
+      ASSETS_S3_PUBLIC_BASE_URL: ${ASSETS_S3_PUBLIC_BASE_URL:-}
+      # A publicação no Instagram exige o backend acessível por HTTPS público.
+      INSTAGRAM_APP_ID: ${INSTAGRAM_APP_ID:-}
+      INSTAGRAM_APP_SECRET: ${INSTAGRAM_APP_SECRET:-}
+      INSTAGRAM_REDIRECT_URI: ${INSTAGRAM_REDIRECT_URI:-}
+      INSTAGRAM_PUBLIC_BASE_URL: ${INSTAGRAM_PUBLIC_BASE_URL:-}
+      ANTHROPIC_API_KEY: ${ANTHROPIC_API_KEY:-}
+    volumes:
+      - uploads:/app/uploads
+    ports:
+      - "8081:8081"
+
+  frontend:
+    build:
+      context: ./frontend
+      args:
+        # Entra no bundle no momento do build; trocar depois exige rebuild da imagem.
+        VITE_API_BASE_URL: ${VITE_API_BASE_URL:?defina VITE_API_BASE_URL}
+    restart: unless-stopped
+    depends_on:
+      - backend
+    ports:
+      - "8080:80"
+
+volumes:
+  pgdata:
+  uploads:

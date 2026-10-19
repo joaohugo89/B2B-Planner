@@ -1,0 +1,48 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+    Console: igual ao padrão do Spring Boot, sem mudança nenhuma.
+    Arquivo:  logs/erros-AAAA-MM-DD.log, com stack trace completo de toda exceção tratada
+              pelo GlobalExceptionHandler (logger br.com.jhcomp.planner.errors) e de
+              qualquer erro WARN/ERROR do resto da aplicação. Um arquivo por dia,
+              14 dias de retenção. A pasta logs/ é ignorada pelo git.
+
+    LOG_DIR troca a pasta de destino (variável de ambiente ou -DLOG_DIR=...).
+-->
+<configuration>
+    <include resource="org/springframework/boot/logging/logback/defaults.xml"/>
+    <include resource="org/springframework/boot/logging/logback/console-appender.xml"/>
+
+    <property name="LOG_DIR" value="${LOG_DIR:-logs}"/>
+    <property name="ERROS_MAX_HISTORY" value="${ERROS_MAX_HISTORY:-14}"/>
+
+    <!-- Sem <file>: o appender escreve direto no arquivo do dia. -->
+    <appender name="ERROS_ARQUIVO" class="ch.qos.logback.core.rolling.RollingFileAppender">
+        <!-- Só WARN e ERROR vão para o arquivo; o DEBUG da aplicação continua só no console. -->
+        <filter class="ch.qos.logback.classic.filter.ThresholdFilter">
+            <level>WARN</level>
+        </filter>
+        <rollingPolicy class="ch.qos.logback.core.rolling.TimeBasedRollingPolicy">
+            <fileNamePattern>${LOG_DIR}/erros-%d{yyyy-MM-dd}.log</fileNamePattern>
+            <maxHistory>${ERROS_MAX_HISTORY}</maxHistory>
+            <cleanHistoryOnStart>true</cleanHistoryOnStart>
+        </rollingPolicy>
+        <encoder>
+            <pattern>%d{yyyy-MM-dd HH:mm:ss.SSS} %-5level [%thread] %logger{40} - %msg%n</pattern>
+            <charset>UTF-8</charset>
+        </encoder>
+    </appender>
+
+    <!--
+        Logger dedicado do GlobalExceptionHandler: vai só para o arquivo (additivity=false),
+        para que o console continue exatamente como estava.
+    -->
+    <logger name="br.com.jhcomp.planner.errors" level="WARN" additivity="false">
+        <appender-ref ref="ERROS_ARQUIVO"/>
+    </logger>
+
+    <root level="INFO">
+        <appender-ref ref="CONSOLE"/>
+        <appender-ref ref="ERROS_ARQUIVO"/>
+    </root>
+
+</configuration>

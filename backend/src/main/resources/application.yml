@@ -1,0 +1,87 @@
+spring:
+  # Sem SPRING_PROFILES_ACTIVE vale "dev": o segredo JWT e a chave de criptografia padrão
+  # continuam funcionando na máquina local. Em produção use SPRING_PROFILES_ACTIVE=prod,
+  # e aí JWT_SECRET e JHCOMP_ENCRYPTION_KEY passam a ser obrigatórias.
+  profiles:
+    default: dev
+  application:
+    name: jhcomp-planner
+  datasource:
+    url: ${DB_URL:jdbc:postgresql://localhost:5432/jhcomp_planner}
+    username: ${DB_USER:postgres}
+    password: ${DB_PASSWORD:postgres}
+  jpa:
+    hibernate:
+      ddl-auto: validate
+    open-in-view: false
+    properties:
+      hibernate:
+        format_sql: true
+  servlet:
+    multipart:
+      max-file-size: 25MB
+      max-request-size: 25MB
+  flyway:
+    enabled: true
+    locations: classpath:db/migration
+    baseline-on-migrate: true
+
+server:
+  # 8081 por padrão: a 8080 desta máquina está ocupada pelo Apache (httpd).
+  port: ${SERVER_PORT:8081}
+
+springdoc:
+  swagger-ui:
+    path: /swagger-ui.html
+
+jhcomp:
+  instagram:
+    app-id: ${INSTAGRAM_APP_ID:}
+    app-secret: ${INSTAGRAM_APP_SECRET:}
+    redirect-uri: ${INSTAGRAM_REDIRECT_URI:http://localhost:5173/instagram/callback}
+    public-base-url: ${INSTAGRAM_PUBLIC_BASE_URL:}
+    api-version: v21.0
+  cors:
+    # Origens do navegador que podem chamar a API. Em produção aponte para o domínio do
+    # frontend (CORS_ALLOWED_ORIGINS=https://planner.exemplo.com), separando por vírgula.
+    allowed-origins: ${CORS_ALLOWED_ORIGINS:http://localhost:5173,http://127.0.0.1:5173}
+  assets:
+    # disk (padrão) grava na pasta abaixo; s3 grava num bucket S3/R2 e sobrevive ao deploy.
+    storage: ${ASSETS_STORAGE:disk}
+    dir: ${ASSETS_DIR:uploads}
+    s3:
+      bucket: ${ASSETS_S3_BUCKET:}
+      region: ${ASSETS_S3_REGION:us-east-1}
+      endpoint: ${ASSETS_S3_ENDPOINT:}
+      access-key: ${ASSETS_S3_ACCESS_KEY:}
+      secret-key: ${ASSETS_S3_SECRET_KEY:}
+      prefix: ${ASSETS_S3_PREFIX:}
+      # Preenchida, a API devolve a URL direta do bucket/CDN; vazia, o backend serve o arquivo.
+      public-base-url: ${ASSETS_S3_PUBLIC_BASE_URL:}
+      path-style-access: ${ASSETS_S3_PATH_STYLE:false}
+  ai:
+    api-key: ${ANTHROPIC_API_KEY:}
+    model: claude-opus-5-5
+    max-tokens: 16000
+    # Endpoint da API; vazio usa api.anthropic.com.
+    base-url: ${ANTHROPIC_BASE_URL:}
+    # Esforço padrão do modelo (low/medium/high); o painel da conta pode sobrescrever.
+    effort: ${AI_EFFORT:medium}
+    # Uma linha JSON por chamada ao Claude, com tokens de entrada e saída.
+    usage-log: ${AI_USAGE_LOG:logs/api_usage.log}
+    # Tempo que um rascunho igual fica em cache, em minutos.
+    draft-cache-minutes: ${AI_DRAFT_CACHE_MINUTES:60}
+  admin:
+    # Vazia: senha aleatória gerada no primeiro boot e impressa no log uma única vez.
+    password: ${JHCOMP_ADMIN_PASSWORD:}
+  encryption:
+    # Chave AES (32 bytes em Base64) para cifrar tokens e chaves de API em repouso.
+    key: ${JHCOMP_ENCRYPTION_KEY:}
+  jwt:
+    secret: ${JWT_SECRET:jhcomp-engineering-system-dev-secret-key-change-me}
+    access-token-minutes: 30
+    refresh-token-days: 14
+
+logging:
+  level:
+    br.com.jhcomp: DEBUG

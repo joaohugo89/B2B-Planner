@@ -1,0 +1,194 @@
+[
+  {
+    "code": "BG-SQ-D01",
+    "file": "C:\\Users\\joaoh\\Documents\\Code\\Projects\\B2B Planner\\templates\\square-1x1\\dark\\BG-SQ-D01.png",
+    "ratio": "RATIO_1_1",
+    "theme": "DARK",
+    "name": "Background quadrado escuro 01",
+    "composition": "1080x1080 px"
+  },
+  {
+    "code": "BG-SQ-D02",
+    "file": "C:\\Users\\joaoh\\Documents\\Code\\Projects\\B2B Planner\\templates\\square-1x1\\dark\\BG-SQ-D02.png",
+    "ratio": "RATIO_1_1",
+    "theme": "DARK",
+    "name": "Background quadrado escuro 02",
+    "composition": "1080x1080 px"
+  },
+  {
+    "code": "BG-SQ-D03",
+    "file": "C:\\Users\\joaoh\\Documents\\Code\\Projects\\B2B Planner\\templates\\square-1x1\\dark\\BG-SQ-D03.png",
+    "ratio": "RATIO_1_1",
+    "theme": "DARK",
+    "name": "Background quadrado escuro 03",
+    "composition": "1080x1080 px"
+  },
+  {
+    "code": "BG-SQ-D04",
+    "file": "C:\\Users\\joaoh\\Documents\\Code\\Projects\\B2B Planner\\templates\\square-1x1\\dark\\BG-SQ-D04.png",
+    "ratio": "RATIO_1_1",
+    "theme": "DARK",
+    "name": "Background quadrado escuro 04",
+    "composition": "1080x1080 px"
+  },
+  {
+    "code": "BG-SQ-L01",
+    "file": "C:\\Users\\joaoh\\Documents\\Code\\Projects\\B2B Planner\\templates\\square-1x1\\light\\BG-SQ-L01.png",
+    "ratio": "RATIO_1_1",
+    "theme": "LIGHT",
+    "name": "Background quadrado claro 01",
+    "composition": "1080x1080 px"
+  },
+  {
+    "code": "BG-SQ-L02",
+    "file": "C:\\Users\\joaoh\\Documents\\Code\\Projects\\B2B Planner\\templates\\square-1x1\\light\\BG-SQ-L02.png",
+    "ratio": "RATIO_1_1",
+    "theme": "LIGHT",
+    "name": "Background quadrado claro 02",
+    "composition": "1080x1080 px"
+  },
+  {
+    "code": "BG-SQ-L03",
+    "file": "C:\\Users\\joaoh\\Documents\\Code\\Projects\\B2B Planner\\templates\\square-1x1\\light\\BG-SQ-L03.png",
+    "ratio": "RATIO_1_1",
+    "theme": "LIGHT",
+    "name": "Background quadrado claro 03",
+    "composition": "1080x1080 px"
+  },
+  {
+    "code": "BG-SQ-L04",
+    "file": "C:\\Users\\joaoh\\Documents\\Code\\Projects\\B2B Planner\\templates\\square-1x1\\light\\BG-SQ-L04.png",
+    "ratio": "RATIO_1_1",
+    "theme": "LIGHT",
+    "name": "Background quadrado claro 04",
+    "composition": "1080x1080 px"
+  },
+  {
+    "code": "BG-V-D01",
+    "file": "C:\\Users\\joaoh\\Documents\\Code\\Projects\\B2B Planner\\templates\\vertical-4x5\\dark\\BG-V-D01.png",
+    "ratio": "RATIO_4_5",
+    "theme": "DARK",
+    "name": "Background vertical escuro 01",
+    "composition": "1080x1350 px"
+  },
+  {
+    "code": "BG-V-D02",
+    "file": "C:\\Users\\joaoh\\Documents\\Code\\Projects\\B2B Planner\\templates\\vertical-4x5\\dark\\BG-V-D02.png",
+    "ratio": "RATIO_4_5",
+    "theme": "DARK",
+    "name": "Background vertical escuro 02",
+    "composition": "1080x1350 px"
+  },
+  {
+    "code": "BG-V-D03",
+    "file": "C:\\Users\\joaoh\\Documents\\Code\\Projects\\B2B Planner\\templates\\vertical-4x5\\dark\\BG-V-D03.png",
+    "ratio": "RATIO_4_5",
+    "theme": "DARK",
+    "name": "Background vertical escuro 03",
+    "composition": "1080x1350 px"
+  },
+  {
+    "code": "BG-V-D04",
+    "file": "C:\\Users\\joaoh\\Documents\\Code\\Projects\\B2B Planner\\templates\\vertical-4x5\\dark\\BG-V-D04.png",
+    "ratio": "RATIO_4_5",
+    "theme": "DARK",
+    "name": "Background vertical escuro 04",
+    "composition": "1080x1350 px"
+  },
+  {
+    "code": "BG-V-D05",
+    "file": "C:\\Users\\joaoh\\Documents\\Code\\Projects\\B2B Planner\\templates\\vertical-4x5\\dark\\BG-V-D05.png",
+    "ratio": "RATIO_4_5",
+    "theme": "DARK",
+    "name": "Background vertical escuro 05",
+    "composition": "1080x1350 px"
+  },
+  {
+    "code": "BG-V-D06",
+    "file": "C:\\Users\\joaoh\\Documents\\Code\\Projects\\B2B Planner\\templates\\vertical-4x5\\dark\\BG-V-D06.png",
+    "ratio": "RATIO_4_5",
+    "theme": "DARK",
+    "name": "Background vertical escuro 06",
+    "composition": "1080x1350 px"
+  },
+  {
+    "code": "BG-V-D07",
+    "file": "C:\\Users\\joaoh\\Documents\\Code\\Projects\\B2B Planner\\templates\\vertical-4x5\\dark\\BG-V-D07.png",
+    "ratio": "RATIO_4_5",
+    "theme": "DARK",
+    "name": "Background vertical escuro 07",
+    "composition": "1080x1350 px"
+  },
+  {
+    "code": "BG-V-D08",
+    "file": "C:\\Users\\joaoh\\Documents\\Code\\Projects\\B2B Planner\\templates\\vertical-4x5\\dark\\BG-V-D08.png",
+    "ratio": "RATIO_4_5",
+    "theme": "DARK",
+    "name": "Background vertical escuro 08",
+    "composition": "1080x1350 px"
+  },
+  {
+    "code": "BG-V-L01",
+    "file": "C:\\Users\\joaoh\\Documents\\Code\\Projects\\B2B Planner\\templates\\vertical-4x5\\light\\BG-V-L01.png",
+    "ratio": "RATIO_4_5",
+    "theme": "LIGHT",
+    "name": "Background vertical claro 01",
+    "composition": "1080x1350 px"
+  },
+  {
+    "code": "BG-V-L02",
+    "file": "C:\\Users\\joaoh\\Documents\\Code\\Projects\\B2B Planner\\templates\\vertical-4x5\\light\\BG-V-L02.png",
+    "ratio": "RATIO_4_5",
+    "theme": "LIGHT",
+    "name": "Background vertical claro 02",
+    "composition": "1080x1350 px"
+  },
+  {
+    "code": "BG-V-L03",
+    "file": "C:\\Users\\joaoh\\Documents\\Code\\Projects\\B2B Planner\\templates\\vertical-4x5\\light\\BG-V-L03.png",
+    "ratio": "RATIO_4_5",
+    "theme": "LIGHT",
+    "name": "Background vertical claro 03",
+    "composition": "1080x1350 px"
+  },
+  {
+    "code": "BG-V-L04",
+    "file": "C:\\Users\\joaoh\\Documents\\Code\\Projects\\B2B Planner\\templates\\vertical-4x5\\light\\BG-V-L04.png",
+    "ratio": "RATIO_4_5",
+    "theme": "LIGHT",
+    "name": "Background vertical claro 04",
+    "composition": "1080x1350 px"
+  },
+  {
+    "code": "BG-V-L05",
+    "file": "C:\\Users\\joaoh\\Documents\\Code\\Projects\\B2B Planner\\templates\\vertical-4x5\\light\\BG-V-L05.png",
+    "ratio": "RATIO_4_5",
+    "theme": "LIGHT",
+    "name": "Background vertical claro 05",
+    "composition": "1080x1350 px"
+  },
+  {
+    "code": "BG-V-L06",
+    "file": "C:\\Users\\joaoh\\Documents\\Code\\Projects\\B2B Planner\\templates\\vertical-4x5\\light\\BG-V-L06.png",
+    "ratio": "RATIO_4_5",
+    "theme": "LIGHT",
+    "name": "Background vertical claro 06",
+    "composition": "1080x1350 px"
+  },
+  {
+    "code": "BG-V-L07",
+    "file": "C:\\Users\\joaoh\\Documents\\Code\\Projects\\B2B Planner\\templates\\vertical-4x5\\light\\BG-V-L07.png",
+    "ratio": "RATIO_4_5",
+    "theme": "LIGHT",
+    "name": "Background vertical claro 07",
+    "composition": "1080x1350 px"
+  },
+  {
+    "code": "BG-V-L08",
+    "file": "C:\\Users\\joaoh\\Documents\\Code\\Projects\\B2B Planner\\templates\\vertical-4x5\\light\\BG-V-L08.png",
+    "ratio": "RATIO_4_5",
+    "theme": "LIGHT",
+    "name": "Background vertical claro 08",
+    "composition": "1080x1350 px"
+  }
+]

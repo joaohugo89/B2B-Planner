@@ -1,0 +1,15 @@
+services:
+  postgres:
+    image: postgres:16-alpine
+    container_name: jhcomp-planner-db
+    environment:
+      POSTGRES_DB: jhcomp_planner
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+    ports:
+      - "5432:5432"
+    volumes:
+      - jhcomp_pgdata:/var/lib/postgresql/data
+
+volumes:
+  jhcomp_pgdata:
