@@ -6,7 +6,7 @@ detalhados, guia de copy e central de assets/templates. Identidade visual dark i
 
 ```
 .
-├── backend/    Java 21 + Spring Boot 3.3 (Web, Data JPA, Security/JWT, Flyway, PostgreSQL)
+├── backend/    Java 25 + Spring Boot 3.3 (Web, Data JPA, Security/JWT, Flyway, PostgreSQL)
 ├── frontend/   React 18 + TypeScript + Vite + Tailwind + Lucide + React Router
 ├── docker-compose.yml        PostgreSQL 16 local
 └── docker-compose.prod.yml   Stack de produção (backend + frontend + Postgres)
@@ -440,7 +440,7 @@ preenchida, a API devolve a URL direta do bucket; vazia, ela continua devolvendo
 ### 4.4 Imagens Docker
 
 ```bash
-# Backend: Maven multi-stage → JRE 21 Alpine, porta por SERVER_PORT
+# Backend: Maven multi-stage → JRE 25 Alpine, porta por SERVER_PORT
 docker build -t jhcomp-planner-backend ./backend
 
 # Frontend: build do Vite → nginx, com fallback para index.html nas rotas do React Router

@@ -1,7 +1,7 @@
 # syntax=docker/dockerfile:1
 
 # ---- build ----------------------------------------------------------------
-FROM maven:3.9-eclipse-temurin-21 AS build
+FROM maven:3.9-eclipse-temurin-25 AS build
 WORKDIR /build
 
 # As dependências vêm primeiro para que só o pom invalidar o cache de download.
@@ -13,7 +13,7 @@ COPY src ./src
 RUN mvn -B -q clean package -DskipTests
 
 # ---- runtime --------------------------------------------------------------
-FROM eclipse-temurin:21-jre-alpine
+FROM eclipse-temurin:25-jre-alpine
 WORKDIR /app
 
 # Usuário sem privilégios; a pasta de uploads fica gravável para o modo storage=disk.
