@@ -1,5 +1,7 @@
 package br.com.jhcomp.planner.security;
 
+import br.com.jhcomp.planner.user.domain.AppUser;
+import br.com.jhcomp.planner.user.repository.AppUserRepository;
 import io.jsonwebtoken.Claims;
 import jakarta.servlet.FilterChain;
 import jakarta.servlet.ServletException;
@@ -20,9 +22,11 @@ import java.util.List;
 public class JwtAuthenticationFilter extends OncePerRequestFilter {
 
     private final JwtService jwtService;
+    private final AppUserRepository users;
 
-    public JwtAuthenticationFilter(JwtService jwtService) {
+    public JwtAuthenticationFilter(JwtService jwtService, AppUserRepository users) {
         this.jwtService = jwtService;
+        this.users = users;
     }
 
     @Override
@@ -36,10 +40,22 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
 
             jwtService.parse(header.substring(7))
                     .filter(jwtService::isAccessToken)
+                    .filter(this::versaoAtual)
                     .ifPresent(claims -> authenticate(request, claims));
         }
 
         chain.doFilter(request, response);
+    }
+
+    /**
+     * "Sair de todas as sessões" sobe a versão do usuário. Sem esta checagem, um access
+     * token roubado continuaria valendo até expirar, e a revogação só pegaria o refresh.
+     */
+    private boolean versaoAtual(Claims claims) {
+        return users.findByEmail(claims.getSubject())
+                .map(AppUser::getTokenVersion)
+                .filter(versao -> versao == jwtService.tokenVersion(claims))
+                .isPresent();
     }
 
     private void authenticate(HttpServletRequest request, Claims claims) {

@@ -13,7 +13,6 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
 import java.time.Instant;
-import java.util.UUID;
 
 @RestController
 @RequestMapping("/api/instagram")
@@ -40,15 +39,18 @@ public class InstagramController {
     public record AuthorizationUrl(String url, String state) {
     }
 
-    public record ConnectRequest(@NotBlank String code) {
+    public record ConnectRequest(@NotBlank String code, @NotBlank String state) {
     }
 
     private final InstagramService service;
     private final InstagramPublishService publishing;
+    private final OAuthStateStore states;
 
-    public InstagramController(InstagramService service, InstagramPublishService publishing) {
+    public InstagramController(InstagramService service, InstagramPublishService publishing,
+                               OAuthStateStore states) {
         this.service = service;
         this.publishing = publishing;
+        this.states = states;
     }
 
     /** Público: a UI usa para saber se mostra "Conectar", "Publicar" ou o aviso de configuração. */
@@ -94,12 +96,14 @@ public class InstagramController {
 
     @GetMapping("/authorize-url")
     public AuthorizationUrl authorizeUrl() {
-        String state = UUID.randomUUID().toString();
+        String state = states.issue();
         return new AuthorizationUrl(service.authorizationUrl(state), state);
     }
 
     @PostMapping("/connect")
     public ConnectionStatus connect(@Valid @RequestBody ConnectRequest request) {
+        // O state tem de ser um dos emitidos aqui: sem isso, um code de fora conectaria outra conta.
+        states.consume(request.state());
         service.connect(request.code());
         return status();
     }

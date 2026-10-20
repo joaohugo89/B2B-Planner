@@ -230,8 +230,8 @@ export const instagramApi = {
     const { data } = await api.get<{ url: string; state: string }>('/instagram/authorize-url');
     return data;
   },
-  async connect(code: string) {
-    const { data } = await api.post<InstagramStatus>('/instagram/connect', { code });
+  async connect(code: string, state: string) {
+    const { data } = await api.post<InstagramStatus>('/instagram/connect', { code, state });
     return data;
   },
   async disconnect() {

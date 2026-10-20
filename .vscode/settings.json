@@ -1,0 +1,17 @@
+{
+  // O aviso de fim de suporte OSS do Spring Boot 3.5 nao e um defeito do codigo: subir para
+  // a linha 4.x troca Jackson 2 por Jackson 3 e Hibernate 6 por 7, e e uma tarefa a parte.
+  // Enquanto ela nao acontece, o aviso fica fora da lista de problemas.
+  "spring-boot.ls.problem.version-validation.UNSUPPORTED_OSS_VERSION": "IGNORE",
+  "spring-boot.ls.problem.version-validation.UPDATE_LATEST_PATCH_VERSION": "INFO",
+
+  // O VS Code compila com o JDK mais novo da maquina e deixa .class que o Maven (Java 21)
+  // nao consegue ler; apontar a mesma versao evita o erro "class file version 69.0".
+  "java.configuration.runtimes": [
+    {
+      "name": "JavaSE-21",
+      "path": "C:/Program Files/Java/jdk-21",
+      "default": true
+    }
+  ]
+}

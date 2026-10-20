@@ -28,7 +28,8 @@ logs/
 .DS_Store
 Thumbs.db
 .idea/
-.vscode/
+.vscode/*
+!.vscode/settings.json
 
 # Fotos antes do redimensionamento (32 MB) — guarde em backup, não no repositório
 templates/originais/

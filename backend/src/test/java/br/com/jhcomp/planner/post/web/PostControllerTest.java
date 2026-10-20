@@ -11,11 +11,14 @@ import br.com.jhcomp.planner.post.service.PostService;
 import br.com.jhcomp.planner.post.web.dto.PostDtos.PlannerMetrics;
 import br.com.jhcomp.planner.security.JwtAuthenticationFilter;
 import br.com.jhcomp.planner.security.JwtService;
+import br.com.jhcomp.planner.user.domain.AppUser;
+import br.com.jhcomp.planner.user.repository.AppUserRepository;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
-import org.springframework.boot.test.mock.mockito.MockBean;
+import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.context.annotation.Import;
 import org.springframework.http.MediaType;
 import org.springframework.test.context.TestPropertySource;
@@ -23,6 +26,7 @@ import org.springframework.test.web.servlet.MockMvc;
 
 import java.lang.reflect.Field;
 import java.util.List;
+import java.util.Optional;
 
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
@@ -49,8 +53,19 @@ class PostControllerTest {
     @Autowired
     private JwtService jwtService;
 
-    @MockBean
+    @MockitoBean
     private PostService service;
+
+    /** O filtro confere a versao do token contra o usuario; sem isso nenhum Bearer passa. */
+    @MockitoBean
+    private AppUserRepository users;
+
+    @BeforeEach
+    void stubUsuario() {
+        AppUser user = new AppUser("admin@jhcomp.com.br", "hash", "Admin");
+        user.setRole("ROLE_ADMIN");
+        when(users.findByEmail(any())).thenReturn(Optional.of(user));
+    }
 
     private String bearer() {
         return "Bearer " + jwtService.generateAccessToken("admin@jhcomp.com.br", "ROLE_ADMIN");
@@ -194,5 +209,23 @@ class PostControllerTest {
                 .andExpect(jsonPath("$.status").value("PUBLICADO"));
 
         verify(service).changeStatus(1L, PostStatus.PUBLICADO);
+    }
+
+    @Test
+    @DisplayName("access token de antes do logout e recusado")
+    void patchStatusRejectsRevokedAccessToken() throws Exception {
+        // "Sair de todas as sessoes" subiu a versao do usuario para 1; o token ainda diz 0.
+        AppUser revogado = new AppUser("admin@jhcomp.com.br", "hash", "Admin");
+        revogado.setRole("ROLE_ADMIN");
+        revogado.revokeTokens();
+        when(users.findByEmail(any())).thenReturn(Optional.of(revogado));
+
+        mockMvc.perform(patch("/api/posts/1/status")
+                        .header("Authorization", bearer())
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"status\":\"PUBLICADO\"}"))
+                .andExpect(status().isUnauthorized());
+
+        verifyNoInteractions(service);
     }
 }

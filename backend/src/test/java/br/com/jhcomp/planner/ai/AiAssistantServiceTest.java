@@ -97,11 +97,20 @@ class AiAssistantServiceTest {
                 .build();
     }
 
+    /**
+     * {@code any(Class)} devolve o tipo cru e o compilador reclama de conversao insegura em
+     * toda chamada; concentrar o cast aqui deixa os testes limpos.
+     */
+    @SuppressWarnings("unchecked")
+    private static StructuredMessageCreateParams<PostDraft> anyDraftParams() {
+        return any(StructuredMessageCreateParams.class);
+    }
+
     @Test
     @DisplayName("o mesmo briefing nao chama a API duas vezes")
     void draftUsesCacheOnSecondCall() {
         StructuredMessage<PostDraft> response = new StructuredMessage<>(PostDraft.class, message(DRAFT_JSON, 1200, 340));
-        when(messages.create(any(StructuredMessageCreateParams.class))).thenReturn(response);
+        when(messages.create(anyDraftParams())).thenReturn(response);
 
         DraftResponse first = service.draft("Backup em PME", "B2B", "CARROSSEL");
         DraftResponse second = service.draft(" backup em pme ", "b2b", "carrossel");
@@ -109,26 +118,26 @@ class AiAssistantServiceTest {
         assertThat(first.cached()).isFalse();
         assertThat(second.cached()).isTrue();
         assertThat(second.draft().title()).isEqualTo(first.draft().title());
-        verify(messages, times(1)).create(any(StructuredMessageCreateParams.class));
+        verify(messages, times(1)).create(anyDraftParams());
     }
 
     @Test
     @DisplayName("briefing diferente volta a chamar a API")
     void differentBriefingCallsApiAgain() {
         StructuredMessage<PostDraft> response = new StructuredMessage<>(PostDraft.class, message(DRAFT_JSON, 10, 20));
-        when(messages.create(any(StructuredMessageCreateParams.class))).thenReturn(response);
+        when(messages.create(anyDraftParams())).thenReturn(response);
 
         service.draft("Backup em PME", "B2B", "CARROSSEL");
         service.draft("Troca de SSD", "B2C", "REELS");
 
-        verify(messages, times(2)).create(any(StructuredMessageCreateParams.class));
+        verify(messages, times(2)).create(anyDraftParams());
     }
 
     @Test
     @DisplayName("o rascunho registra tokens de entrada e saida, e o cache nao registra de novo")
     void draftRecordsUsageOnce() {
         StructuredMessage<PostDraft> response = new StructuredMessage<>(PostDraft.class, message(DRAFT_JSON, 1200, 340));
-        when(messages.create(any(StructuredMessageCreateParams.class))).thenReturn(response);
+        when(messages.create(anyDraftParams())).thenReturn(response);
 
         service.draft("Backup em PME", "B2B", "CARROSSEL");
         verify(usage).record("draft", "claude-opus-5-5", 1200L, 340L, "medium");

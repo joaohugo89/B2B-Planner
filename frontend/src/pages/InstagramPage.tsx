@@ -33,7 +33,7 @@ export function InstagramPage() {
     if (!code) return;
 
     const expected = sessionStorage.getItem(STATE_KEY);
-    if (expected && returnedState && expected !== returnedState) {
+    if (!returnedState || (expected && expected !== returnedState)) {
       setError('A resposta da Meta não bate com o pedido feito por este navegador. Tente conectar de novo.');
       setParams({}, { replace: true });
       return;
@@ -41,7 +41,7 @@ export function InstagramPage() {
 
     setBusy(true);
     instagramApi
-      .connect(code)
+      .connect(code, returnedState)
       .then((connected) => {
         setMessage(`Conta @${connected.username ?? 'instagram'} conectada.`);
         status.reload();

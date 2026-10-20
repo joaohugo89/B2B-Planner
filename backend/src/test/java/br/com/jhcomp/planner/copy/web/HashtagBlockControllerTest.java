@@ -6,11 +6,14 @@ import br.com.jhcomp.planner.copy.domain.HashtagBlock;
 import br.com.jhcomp.planner.copy.repository.HashtagBlockRepository;
 import br.com.jhcomp.planner.security.JwtAuthenticationFilter;
 import br.com.jhcomp.planner.security.JwtService;
+import br.com.jhcomp.planner.user.domain.AppUser;
+import br.com.jhcomp.planner.user.repository.AppUserRepository;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
-import org.springframework.boot.test.mock.mockito.MockBean;
+import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.context.annotation.Import;
 import org.springframework.http.MediaType;
 import org.springframework.test.context.TestPropertySource;
@@ -42,8 +45,19 @@ class HashtagBlockControllerTest {
     @Autowired
     private JwtService jwtService;
 
-    @MockBean
+    @MockitoBean
     private HashtagBlockRepository blocks;
+
+    /** O filtro confere a versao do token contra o usuario; sem isso nenhum Bearer passa. */
+    @MockitoBean
+    private AppUserRepository users;
+
+    @BeforeEach
+    void stubUsuario() {
+        AppUser user = new AppUser("admin@jhcomp.com.br", "hash", "Admin");
+        user.setRole("ROLE_ADMIN");
+        when(users.findByEmail(any())).thenReturn(Optional.of(user));
+    }
 
     private String bearer() {
         return "Bearer " + jwtService.generateAccessToken("admin@jhcomp.com.br", "ROLE_ADMIN");

@@ -83,7 +83,18 @@ public class TemplateAssetController {
         return ResponseEntity.ok()
                 .header(HttpHeaders.CONTENT_TYPE, contentType)
                 .header(HttpHeaders.CACHE_CONTROL, "public, max-age=3600")
+                // Um SVG enviado como template é HTML para o navegador: aberto direto na mesma
+                // origem do painel, o script dentro dele rodaria com a sessão do usuário. O
+                // sandbox corta script e navegação; em <img> a imagem continua aparecendo igual.
+                .header("Content-Security-Policy", "default-src 'none'; style-src 'unsafe-inline'; sandbox")
+                .header(HttpHeaders.CONTENT_DISPOSITION, "inline; filename=\"" + nomeSeguro(fileName) + "\"")
+                .header("X-Content-Type-Options", "nosniff")
                 .body(resource);
+    }
+
+    /** Tira aspas e quebras do nome antes de ele entrar no cabeçalho. */
+    private static String nomeSeguro(String fileName) {
+        return fileName.replaceAll("[^A-Za-z0-9._-]", "_");
     }
 
     @PutMapping("/{id}")
