@@ -5,6 +5,7 @@ import br.com.jhcomp.planner.settings.SettingsService;
 import br.com.jhcomp.planner.post.domain.PostStatus;
 import br.com.jhcomp.planner.post.repository.PostRepository;
 import com.fasterxml.jackson.databind.JsonNode;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;
@@ -13,6 +14,7 @@ import org.springframework.web.client.RestClient;
 import org.springframework.web.client.RestClientException;
 import org.springframework.web.util.UriComponentsBuilder;
 
+import java.net.URI;
 import java.net.URLEncoder;
 import java.nio.charset.StandardCharsets;
 import java.time.Instant;
@@ -40,6 +42,9 @@ public class InstagramService {
     private final PostRepository posts;
     private final SettingsService settings;
     private final RestClient http = RestClient.create();
+
+    /** Converte a resposta aqui, em vez de deixar o RestClient escolher pelo Content-Type. */
+    private static final ObjectMapper MAPPER = new ObjectMapper();
 
     public InstagramService(InstagramProperties properties,
                             InstagramAccountRepository accounts,
@@ -142,7 +147,12 @@ public class InstagramService {
         JsonNode pages = get(properties.graphUrl("/me/accounts")
                 + "?fields=id,name,access_token&access_token=" + enc(userToken));
 
+        // Guardado para a mensagem de erro: sem isso, "nao encontrei" nao diz se o problema e
+        // a Pagina nao ter sido liberada na tela da Meta ou o Instagram nao estar vinculado.
+        List<String> paginasVistas = new ArrayList<>();
+
         for (JsonNode page : pages.path("data")) {
+            paginasVistas.add(page.path("name").asText("(sem nome)"));
             String pageId = page.path("id").asText();
             String pageToken = page.path("access_token").asText(userToken);
 
@@ -165,9 +175,18 @@ public class InstagramService {
             }
         }
 
+        if (paginasVistas.isEmpty()) {
+            throw new InstagramException(
+                    "A autorização não liberou nenhuma Página do Facebook. Clique em conectar de novo e, "
+                            + "na tela da Meta, escolha \"Optar por entrar em todas as empresas atuais e futuras\" "
+                            + "ou marque a Página ligada ao seu Instagram.");
+        }
+
         throw new InstagramException(
-                "Nenhuma conta Instagram Profissional ligada às suas Páginas do Facebook foi encontrada. "
-                        + "Confira se a conta é Comercial/Criador e está vinculada a uma Página.");
+                "Encontrei estas Páginas: " + String.join(", ", paginasVistas)
+                        + " — mas nenhuma delas tem uma conta Instagram Profissional vinculada. "
+                        + "No app do Instagram: Editar perfil > Página, e ligue a conta à Página certa. "
+                        + "A conta também precisa ser Comercial ou de Criador de conteúdo.");
     }
 
     @Transactional
@@ -281,7 +300,39 @@ public class InstagramService {
     }
 
     private JsonNode get(String url) {
-        return comRetry(() -> check(http.get().uri(url).retrieve().body(JsonNode.class)));
+        return comRetry(() -> check(ler(http.get().uri(montar(url)).retrieve().body(byte[].class))));
+    }
+
+    /**
+     * Le a resposta como bytes e converte aqui.
+     *
+     * <p>O /oauth/access_token da Meta responde com Content-Type "text/javascript", heranca
+     * antiga do Facebook. Pedindo JsonNode direto, o RestClient procura um conversor para esse
+     * tipo, nao acha e falha antes de olhar o conteudo — que e JSON comum.</p>
+     */
+    private static JsonNode ler(byte[] corpo) {
+        try {
+            String texto = corpo == null ? "" : new String(corpo, StandardCharsets.UTF_8);
+            return texto.isBlank() ? null : MAPPER.readTree(texto);
+        } catch (com.fasterxml.jackson.core.JsonProcessingException ex) {
+            throw new InstagramException("A Meta respondeu em um formato inesperado.", ex);
+        }
+    }
+
+    /**
+     * Entrega a URL como URI pronta, e nao como texto.
+     *
+     * <p>Os parametros ja vao codificados por {@link #enc(String)}. Passando a String crua, o
+     * RestClient a trata como template e codifica de novo: o "%3A" do https vira "%253A" e a
+     * Meta recusa com "redirect_uri isn't an absolute URI". Com URI.create, o que foi montado
+     * aqui chega intacto.</p>
+     */
+    private static URI montar(String url) {
+        // A Graph API pede campos aninhados com chaves — "instagram_business_account{id,username}".
+        // URI.create recusa "{" e "}" crus, entao eles entram codificados; o resto da URL ja vem
+        // montado e codificado por enc(), e nao pode ser tocado de novo.
+        String seguro = url.replace("{", "%7B").replace("}", "%7D");
+        return URI.create(seguro);
     }
 
     /**
@@ -329,7 +380,7 @@ public class InstagramService {
     }
 
     private JsonNode post(String url) {
-        return comRetry(() -> check(http.post().uri(url).retrieve().body(JsonNode.class)));
+        return comRetry(() -> check(ler(http.post().uri(montar(url)).retrieve().body(byte[].class))));
     }
 
     /** A Graph API devolve 200 com um objeto "error" em várias falhas. */
