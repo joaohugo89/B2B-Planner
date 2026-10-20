@@ -7,14 +7,16 @@
 
 services:
   postgres:
-    image: postgres:16-alpine
+    # Mesma linha do Postgres instalado na maquina: backups de la restauram aqui sem atrito.
+    image: postgres:18-alpine
     restart: unless-stopped
     environment:
       POSTGRES_DB: ${DB_NAME:-jhcomp_planner}
       POSTGRES_USER: ${DB_USER:?defina DB_USER}
       POSTGRES_PASSWORD: ${DB_PASSWORD:?defina DB_PASSWORD}
     volumes:
-      - pgdata:/var/lib/postgresql/data
+      # O Postgres 18+ quer um unico mount na raiz; ele cria a subpasta da versao dentro.
+      - pgdata:/var/lib/postgresql
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -U $${POSTGRES_USER} -d $${POSTGRES_DB}"]
       interval: 10s
@@ -50,6 +52,8 @@ services:
       INSTAGRAM_APP_SECRET: ${INSTAGRAM_APP_SECRET:-}
       INSTAGRAM_REDIRECT_URI: ${INSTAGRAM_REDIRECT_URI:-}
       INSTAGRAM_PUBLIC_BASE_URL: ${INSTAGRAM_PUBLIC_BASE_URL:-}
+      # Senha do admin no primeiro boot; sem ela, o backend sorteia uma e imprime no log.
+      JHCOMP_ADMIN_PASSWORD: ${JHCOMP_ADMIN_PASSWORD:-}
       # Assistente de IA: anthropic (Claude) ou openai (Groq, OpenRouter, OpenAI, Ollama).
       AI_PROVIDER: ${AI_PROVIDER:-anthropic}
       AI_API_KEY: ${AI_API_KEY:-}

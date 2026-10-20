@@ -1,0 +1,23 @@
+# Endereço fixo: https://planner.joaohugo.com, no ar enquanto o container estiver rodando.
+#
+# Diferente do docker-compose.tunnel.yml, que sorteia um endereço novo a cada vez, aqui o
+# túnel é nomeado e amarrado ao seu domínio na Cloudflare. O passo a passo para gerar o
+# CLOUDFLARE_TUNNEL_TOKEN está em docs/DOMINIO.md.
+#
+# Ligar:
+#   docker compose -f docker-compose.prod.yml -f docker-compose.local.yml -f docker-compose.dominio.yml --env-file .env up -d
+#
+# Desligar só o endereço, deixando o planner rodando em casa:
+#   docker compose -f docker-compose.prod.yml stop dominio
+#
+# Com o container parado, o endereço responde com a página de erro da Cloudflare (1033):
+# ninguém alcança a sua máquina.
+
+services:
+  dominio:
+    image: cloudflare/cloudflared:2026.10.1
+    restart: unless-stopped
+    depends_on:
+      - frontend
+    # O token carrega o nome do túnel e as rotas configuradas no painel da Cloudflare.
+    command: tunnel --no-autoupdate run --token ${CLOUDFLARE_TUNNEL_TOKEN:?defina CLOUDFLARE_TUNNEL_TOKEN no .env}

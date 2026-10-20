@@ -8,7 +8,10 @@ detalhados, guia de copy e central de assets/templates. Identidade visual dark i
 .
 ├── backend/    Java 25 + Spring Boot 3.3 (Web, Data JPA, Security/JWT, Flyway, PostgreSQL)
 ├── frontend/   React 18 + TypeScript + Vite + Tailwind + Lucide + React Router
-├── docker-compose.yml        PostgreSQL 16 local
+├── docker-compose.yml        PostgreSQL 18 avulso (modo desenvolvimento)
+├── docker-compose.local.yml  Portas desta máquina, usado junto com o de produção
+├── docker-compose.tunnel.yml Link temporário (Cloudflare) para acessar de fora
+├── docker-compose.dominio.yml Endereço fixo em planner.joaohugo.com
 └── docker-compose.prod.yml   Stack de produção (backend + frontend + Postgres)
 ```
 
@@ -80,8 +83,9 @@ psql -U postgres -c "create database jhcomp_planner;"
 $env:DB_URL = "jdbc:postgresql://localhost:5432/jhcomp_planner"
 ```
 
-Com Docker disponível, `docker compose up -d` também serve (PostgreSQL 16 em `localhost:5432`,
-usuário/senha `postgres`).
+Com Docker, `docker compose up -d` sobe só o banco (PostgreSQL 18 em `localhost:5432`,
+usuário/senha `postgres`). Para subir **a aplicação inteira** em containers, veja
+[docs/DOCKER.md](docs/DOCKER.md).
 
 ## 2. Backend
 
@@ -171,9 +175,19 @@ estão implementados aqui.
 ### Assistente de conteúdo
 
 O serviço de IA é escolhido na aba da sua conta: **Claude (Anthropic)** ou qualquer API no padrão
-`/chat/completions` da OpenAI — o que inclui **Groq** e **OpenRouter**, que têm camada gratuita, a
-OpenAI paga e um **Ollama** rodando na sua máquina. Sem chave, a aplicação sobe normalmente e o
-assistente aparece desativado na UI.
+`/chat/completions` da OpenAI — o que inclui **Groq**, **Google Gemini** e **OpenRouter**, que têm
+camada gratuita, a OpenAI paga e um **Ollama** rodando na sua máquina. Sem chave, a aplicação sobe
+normalmente e o assistente aparece desativado na UI.
+
+Medido nesta máquina em 19/10/2026, com o mesmo pedido:
+
+| Serviço | Chat | Rascunho estruturado |
+| --- | --- | --- |
+| Groq (`openai/gpt-oss-120b`) | ~0,7 s | ~1,5 s |
+| Google Gemini (`gemini-3.8-flash`) | 5 s a 3 min, com recusas por sobrecarga | ~128 s |
+
+Por isso as chamadas de IA no frontend esperam até 5 minutos, enquanto o resto da API mantém o
+limite de 15 segundos.
 
 O passo a passo de cada serviço está em [docs/ASSISTENTE-IA.md](docs/ASSISTENTE-IA.md).
 
@@ -181,7 +195,7 @@ O passo a passo de cada serviço está em [docs/ASSISTENTE-IA.md](docs/ASSISTENT
 # PowerShell: Groq (gratuito), já de pé no primeiro boot
 $env:AI_PROVIDER = "openai"
 $env:AI_BASE_URL = "https://api.groq.com/openai/v1"
-$env:AI_MODEL    = "llama-3.3-70b-versatile"
+$env:AI_MODEL    = "openai/gpt-oss-120b"
 $env:AI_API_KEY  = "gsk_..."
 ```
 
@@ -191,8 +205,9 @@ $env:AI_API_KEY  = "gsk_..."
 | POST | `/api/ai/chat` | Conversa com histórico `[{role, content}]` (exige JWT) |
 | POST | `/api/ai/draft` | Gera um post completo a partir de um briefing (exige JWT) |
 
-O `/draft` usa structured outputs, então o rascunho volta com título, pilar, formato, público, resumo,
-legenda, hashtags e CTA já nos campos do planner — a tela **Assistente IA** salva isso como post em rascunho.
+O `/draft` devolve o rascunho com título, pilar, formato, público, resumo, legenda, hashtags e CTA
+já nos campos do planner — no Claude via structured outputs do próprio protocolo, nos demais
+pedindo JSON e tolerando resposta cercada por ```json — a tela **Assistente IA** salva isso como post em rascunho.
 
 ### Endpoints principais
 
@@ -381,8 +396,9 @@ produção.
    docker compose -f docker-compose.prod.yml --env-file .env up -d --build
    ```
 
-   Para rodar essa mesma stack na sua máquina (o painel vai para a 8090, já que o Apache usa a
-   8080) e para os comandos do dia a dia, veja [docs/DOCKER.md](docs/DOCKER.md):
+   Para rodar essa mesma stack na sua máquina — painel em `localhost:8090`, API em `localhost:8081`
+   e o banco do container em `localhost:5440` — use os dois arquivos juntos. O login do painel, o
+   acesso ao banco e os comandos do dia a dia estão em [docs/DOCKER.md](docs/DOCKER.md):
 
    ```bash
    docker compose -f docker-compose.prod.yml -f docker-compose.local.yml --env-file .env up -d --build
@@ -390,6 +406,10 @@ produção.
 
    O frontend sobe na porta 8080 (nginx) e o backend na 8081. Ponha um proxy com HTTPS na frente
    (Caddy, Traefik ou o do próprio provedor) apontando cada domínio para a sua porta.
+
+   Para publicar em **https://planner.joaohugo.com** a partir desta própria máquina, sem abrir
+   porta no roteador e com HTTPS pronto, use o `docker-compose.dominio.yml`: o passo a passo
+   está em [docs/DOMINIO.md](docs/DOMINIO.md).
 
    Em um PaaS que constrói imagens, aponte dois serviços para `backend/Dockerfile` e
    `frontend/Dockerfile` e passe `VITE_API_BASE_URL` como *build arg* do frontend.
@@ -561,11 +581,8 @@ Quatro etapas, parando na primeira que falhar:
 
 `-PularTestes` pula as etapas 2 e 3.
 
-> **Etapa 4 ainda não exercitada.** Esta máquina não tem Docker, então o `docker build` das duas
-> imagens nunca rodou aqui. Quando o `docker` não está no PATH, o script **avisa e termina com
-> código 0** depois das etapas 1-3, imprimindo os comandos de build para rodar numa máquina com
-> Docker — em vez de estourar um erro de comando não encontrado. A primeira build real continua
-> pendente (ver 6).
+Quando o `docker` não está no PATH, o script avisa e termina com código 0 depois das etapas 1-3,
+imprimindo os comandos de build — em vez de estourar um erro de comando não encontrado.
 
 ## 6. Verificação já executada
 
@@ -585,8 +602,22 @@ Quatro etapas, parando na primeira que falhar:
   validado nos dois caminhos — cancelando na confirmação (nada alterado) e restaurando os uploads
   com `-SomenteUploads -Force`; `scripts/deploy.ps1` para com código 1 listando as variáveis que
   faltam e, com todas presentes, chega à etapa 4 e avisa que não há Docker.
-- `docker build` das duas imagens: **não verificado** — esta máquina não tem Docker instalado.
-  Os Dockerfiles e o `docker-compose.prod.yml` ainda precisam de uma build real antes do deploy.
+- Assistente de IA (19/10/2026): o provedor configurável foi exercitado contra três serviços —
+  um servidor local simulando o protocolo da OpenAI, o Google Gemini e o Groq. Com o Groq
+  (`openai/gpt-oss-120b`), chat em ~0,7 s, rascunho estruturado em ~1,5 s, cache do rascunho
+  devolvendo em 10 ms sem nova chamada e consumo de tokens registrado por operação.
+- Endereço fixo (20/10/2026): com o `docker-compose.dominio.yml` no ar, **https://planner.joaohugo.com**
+  respondeu com certificado válido — painel, rotas do React Router, API em `/api`, imagens dos
+  templates, login e assistente de IA (chat em 1,1 s, rascunho em 1,6 s pelo Groq); escrita sem
+  token continuou em 401.
+- Link temporário (19/10/2026): com o `docker-compose.tunnel.yml` no ar, o planner respondeu por
+  um endereço `trycloudflare.com` — painel, rotas do React Router, API em `/api`, imagens dos
+  templates, login e assistente de IA; escrita sem token continuou em 401.
+- Docker (19/10/2026): as duas imagens foram construídas e a stack completa
+  (`docker-compose.prod.yml` + `docker-compose.local.yml`) subiu nesta máquina — Postgres saudável,
+  as 11 migrations aplicadas, login emitindo token, escrita sem token em 401 e o painel servido
+  pelo nginx. O banco do container foi carregado com um dump da instalação local: 24 templates,
+  3 tons, 3 blocos de hashtags e as 24 imagens servindo pela API.
 - Bateria de 19/10/2026 (2ª rodada): 8 endpoints públicos 200, 5 rotas protegidas 401, as 7 telas
   sem erro de console, carrossel com foto salvo no planner, prévia do Instagram navegando,
   templates sem artes/fotos e `mvn test` com 23 testes passando.

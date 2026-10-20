@@ -1,0 +1,27 @@
+# Link temporário para acessar o planner de fora desta máquina (celular, outro computador,
+# ou para o Instagram conseguir baixar as artes).
+#
+# Ligar:
+#   docker compose -f docker-compose.prod.yml -f docker-compose.local.yml -f docker-compose.tunnel.yml --env-file .env up -d
+#   docker compose -f docker-compose.prod.yml logs tunnel | grep trycloudflare.com
+#
+# Desligar só o link, deixando o planner rodando em casa:
+#   docker compose -f docker-compose.prod.yml -f docker-compose.local.yml -f docker-compose.tunnel.yml --env-file .env stop tunnel
+#
+# O endereço é sorteado pela Cloudflare a cada vez e some quando o container para. Não há
+# conta nem cadastro: é o modo "quick tunnel".
+#
+# Para um endereço que não muda (planner.joaohugo.com), use o docker-compose.dominio.yml.
+#
+# ATENÇÃO: enquanto o link estiver no ar, qualquer pessoa com ele alcança o painel. A leitura
+# é pública por desenho (feed, posts, templates) e só a escrita pede login. Suba o túnel quando
+# precisar e pare depois.
+
+services:
+  tunnel:
+    image: cloudflare/cloudflared:2026.10.1
+    restart: unless-stopped
+    depends_on:
+      - frontend
+    # O túnel aponta para o nginx do frontend, que já serve o painel e a API em /api.
+    command: tunnel --no-autoupdate --url http://frontend:80
