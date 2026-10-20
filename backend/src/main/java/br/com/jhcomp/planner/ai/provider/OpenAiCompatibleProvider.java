@@ -240,21 +240,44 @@ public class OpenAiCompatibleProvider implements AiProvider {
 
     /** Descreve os campos esperados, já que não usamos json_schema. */
     private String schemaInstruction(Class<?> type) {
-        String campos = String.join(", ", camposDe(type));
         return """
 
                 Responda SOMENTE com um objeto JSON válido, sem texto antes ou depois e sem cercas de código.
                 O objeto deve ter exatamente estes campos: %s.
-                """.formatted(campos);
+                Preencha todos eles: nenhum campo pode vir nulo, vazio ou zerado.
+                """.formatted(String.join(", ", camposDe(type, 0)));
     }
 
-    private List<String> camposDe(Class<?> type) {
+    /**
+     * Descreve os campos de um record e, quando um deles é uma lista de outro record, também
+     * os campos de dentro. Sem isso, "drafts (List)" não diz ao modelo o que cada item leva,
+     * e ele devolve a lista com metade dos campos em branco.
+     */
+    private List<String> camposDe(Class<?> type, int profundidade) {
         List<String> campos = new ArrayList<>();
-        if (type.isRecord()) {
-            for (var component : type.getRecordComponents()) {
-                campos.add(component.getName() + " (" + component.getType().getSimpleName() + ")");
+        if (!type.isRecord() || profundidade > 2) {
+            return campos;
+        }
+
+        for (var component : type.getRecordComponents()) {
+            String descricao = component.getName() + " (" + component.getType().getSimpleName() + ")";
+
+            Class<?> interno = itemDaLista(component.getGenericType());
+            if (interno != null && interno.isRecord()) {
+                descricao += ", em que cada item tem: " + String.join(", ", camposDe(interno, profundidade + 1));
             }
+            campos.add(descricao);
         }
         return campos;
+    }
+
+    /** Devolve o tipo X de um List&lt;X&gt;, ou null quando não for uma lista. */
+    private Class<?> itemDaLista(java.lang.reflect.Type tipo) {
+        if (tipo instanceof java.lang.reflect.ParameterizedType parametrizado
+                && parametrizado.getRawType() == List.class
+                && parametrizado.getActualTypeArguments()[0] instanceof Class<?> item) {
+            return item;
+        }
+        return null;
     }
 }

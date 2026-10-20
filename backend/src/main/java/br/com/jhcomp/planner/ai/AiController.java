@@ -4,6 +4,8 @@ import br.com.jhcomp.planner.ai.AiDtos.ChatRequest;
 import br.com.jhcomp.planner.ai.AiDtos.ChatResponse;
 import br.com.jhcomp.planner.ai.AiDtos.DraftRequest;
 import br.com.jhcomp.planner.ai.AiDtos.DraftResponse;
+import br.com.jhcomp.planner.ai.AiDtos.DraftsFromChatRequest;
+import br.com.jhcomp.planner.ai.AiDtos.PostDraft;
 import br.com.jhcomp.planner.ai.AiDtos.UsageReport;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
@@ -12,6 +14,8 @@ import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
+
+import java.util.List;
 
 @RestController
 @RequestMapping("/api/ai")
@@ -43,6 +47,12 @@ public class AiController {
     @PostMapping("/draft")
     public DraftResponse draft(@Valid @RequestBody DraftRequest request) {
         return service.draft(request.brief(), request.audience(), request.format());
+    }
+
+    /** Transforma a conversa em vários posts prontos, um por ideia. */
+    @PostMapping("/drafts")
+    public List<PostDraft> draftsFromChat(@Valid @RequestBody DraftsFromChatRequest request) {
+        return service.draftsFromConversation(request.messages(), request.count());
     }
 
     /** Consumo de tokens: total do mês e as últimas chamadas. Exige token de acesso. */

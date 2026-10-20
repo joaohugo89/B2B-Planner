@@ -2,6 +2,8 @@ package br.com.jhcomp.planner.ai;
 
 import com.fasterxml.jackson.annotation.JsonPropertyDescription;
 import jakarta.validation.Valid;
+import jakarta.validation.constraints.Min;
+import jakarta.validation.constraints.Max;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotEmpty;
 import jakarta.validation.constraints.Size;
@@ -24,9 +26,34 @@ public final class AiDtos {
     }
 
     public record DraftRequest(
-            @NotBlank @Size(max = 2000) String brief,
+            @NotBlank(message = "Escreva um briefing antes de gerar o rascunho.")
+            @Size(max = 2000, message = "O briefing deve ter no máximo 2000 caracteres: "
+                    + "descreva o tema em poucas linhas, não cole o post pronto.")
+            String brief,
             @Size(max = 24) String audience,
             @Size(max = 24) String format) {
+    }
+
+    /**
+     * Pedido para transformar uma conversa em vários rascunhos de uma vez.
+     *
+     * <p>O chat e o gerador de posts são caminhos separados — o modelo não guarda memória de
+     * um para o outro. Aqui a conversa viaja de propósito, como matéria-prima.</p>
+     */
+    public record DraftsFromChatRequest(
+            @NotEmpty(message = "Converse com o assistente antes de transformar em posts.")
+            @Size(max = 40, message = "Conversa longa demais: comece uma nova para gerar os posts.")
+            List<@Valid ChatMessage> messages,
+
+            @Min(value = 1, message = "Peça ao menos um post.")
+            @Max(value = 5, message = "No máximo 5 posts por vez, para o custo não disparar.")
+            int count) {
+    }
+
+    /** Vários rascunhos numa resposta só. */
+    public record PostDraftBatch(
+            @JsonPropertyDescription("Lista de posts completos, um por ideia distinta da conversa")
+            List<PostDraft> drafts) {
     }
 
     /** Rascunho entregue ao frontend, com a marca de quando veio do cache em memória. */

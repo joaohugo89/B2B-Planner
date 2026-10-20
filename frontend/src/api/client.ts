@@ -91,9 +91,13 @@ export function describeError(error: unknown): string {
       return 'Não foi possível falar com a API. O backend está rodando?';
     }
     const { status, data } = axiosError.response;
+    // Validação devolve o motivo em "details" ("brief: size must be between 0 and 2000").
+    // Sem isto, a tela mostrava só "Payload inválido." e não dava para saber o que corrigir.
+    const detalhe = (data as { details?: string[] } | undefined)?.details?.[0];
     if (status === 401) return 'Sessão expirada ou credenciais inválidas.';
     if (status === 403) return 'Acesso negado para esta operação.';
     if (status === 404) return data?.message ?? 'Registro não encontrado.';
+    if (status === 400 && detalhe) return detalhe.replace(/^[a-zA-Z]+: /, '');
     return data?.message ?? `Falha inesperada na API (HTTP ${status}).`;
   }
   return 'Erro inesperado no cliente.';

@@ -83,6 +83,15 @@ export const aiApi = {
     );
     return data;
   },
+  /** Lê a conversa e devolve vários posts prontos, um por ideia. */
+  async draftsFromChat(messages: ChatMessage[], count: number) {
+    const { data } = await api.post<PostDraft[]>(
+      '/ai/drafts',
+      { messages, count },
+      { timeout: ESPERA_IA },
+    );
+    return data;
+  },
   /** Consumo de tokens do mês e últimas chamadas; exige estar logado. */
   async usage() {
     const { data } = await api.get<AiUsage>('/ai/usage');

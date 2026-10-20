@@ -1,4 +1,9 @@
 spring:
+  jackson:
+    mapper:
+      # "Carrossel" e "CARROSSEL" são o mesmo formato: um texto vindo de um modelo de IA
+      # não precisa derrubar a requisição por causa de maiúsculas.
+      accept-case-insensitive-enums: true
   # Sem SPRING_PROFILES_ACTIVE vale "dev": o segredo JWT e a chave de criptografia padrão
   # continuam funcionando na máquina local. Em produção use SPRING_PROFILES_ACTIVE=prod,
   # e aí JWT_SECRET e JHCOMP_ENCRYPTION_KEY passam a ser obrigatórias.

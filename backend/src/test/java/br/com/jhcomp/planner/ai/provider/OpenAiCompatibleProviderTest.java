@@ -2,6 +2,7 @@ package br.com.jhcomp.planner.ai.provider;
 
 import br.com.jhcomp.planner.ai.AiDtos.ChatMessage;
 import br.com.jhcomp.planner.ai.AiDtos.PostDraft;
+import br.com.jhcomp.planner.ai.AiDtos.PostDraftBatch;
 import br.com.jhcomp.planner.ai.AiUnavailableException;
 import br.com.jhcomp.planner.ai.provider.AiProvider.AiReply;
 import br.com.jhcomp.planner.ai.provider.AiProvider.AiRequest;
@@ -134,5 +135,25 @@ class OpenAiCompatibleProviderTest {
         assertThatThrownBy(() -> provider.chat(torta, List.of(new ChatMessage("user", "oi"))))
                 .isInstanceOf(AiUnavailableException.class)
                 .hasMessageContaining("inválida");
+    }
+
+    @Test
+    @DisplayName("a instrucao descreve tambem os campos de dentro de uma lista")
+    void schemaDescribesNestedRecords() {
+        resposta = "{\"choices\":[{\"message\":{\"content\":\"{\\\"drafts\\\":[]}\"}}],\"usage\":{}}";
+
+        // A resposta vazia faz o metodo falhar, mas o que importa aqui e o pedido enviado.
+        try {
+            provider.structured(request(), "briefing", PostDraftBatch.class);
+        } catch (AiUnavailableException esperado) {
+            // lista vazia nao e problema deste teste
+        }
+
+        // Sem os campos internos descritos, o modelo devolveria cada item pela metade.
+        assertThat(corpoRecebido.get())
+                .contains("drafts")
+                .contains("em que cada item tem")
+                .contains("title")
+                .contains("slideCount");
     }
 }

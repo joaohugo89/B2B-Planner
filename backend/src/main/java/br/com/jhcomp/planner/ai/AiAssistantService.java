@@ -3,6 +3,7 @@ package br.com.jhcomp.planner.ai;
 import br.com.jhcomp.planner.ai.AiDtos.ChatMessage;
 import br.com.jhcomp.planner.ai.AiDtos.DraftResponse;
 import br.com.jhcomp.planner.ai.AiDtos.PostDraft;
+import br.com.jhcomp.planner.ai.AiDtos.PostDraftBatch;
 import br.com.jhcomp.planner.ai.provider.AiProvider;
 import br.com.jhcomp.planner.ai.provider.AiProvider.AiReply;
 import br.com.jhcomp.planner.ai.provider.AiProvider.AiRequest;
@@ -134,6 +135,43 @@ public class AiAssistantService {
 
         draftCache.put(cacheKey, draft);
         return new DraftResponse(draft, false);
+    }
+
+    /**
+     * Lê uma conversa já acontecida e devolve vários posts prontos, um por ideia distinta.
+     *
+     * <p>Aqui não há cache: duas conversas nunca são iguais, e guardar o resultado só ocuparia
+     * memória sem economizar chamada.</p>
+     */
+    public List<PostDraft> draftsFromConversation(List<ChatMessage> conversation, int count) {
+        String transcricao = conversation.stream()
+                .map(m -> ("assistant".equalsIgnoreCase(m.role()) ? "Assistente: " : "Você: ") + m.content())
+                .collect(Collectors.joining("\n\n"));
+
+        String instruction = """
+                Abaixo está uma conversa de planejamento de conteúdo da JH.COMP.
+
+                Escolha as %d ideias mais fortes e distintas que apareceram nela e transforme cada
+                uma num post completo do Instagram. Ideias parecidas contam como uma só: prefira
+                ângulos diferentes a variações do mesmo tema. Ignore trechos que não viram post,
+                como cumprimentos e perguntas de esclarecimento.
+
+                Conversa:
+                %s
+                """.formatted(count, transcricao);
+
+        AiReply<PostDraftBatch> reply =
+                current().structured(request(systemPrompt()), instruction, PostDraftBatch.class);
+        usage.record("drafts", model(), reply.inputTokens(), reply.outputTokens(), effort());
+
+        PostDraftBatch batch = reply.content();
+        if (batch == null || batch.drafts() == null || batch.drafts().isEmpty()) {
+            throw new AiUnavailableException(
+                    "O modelo não encontrou ideias de post nesta conversa. Converse um pouco mais e tente de novo.");
+        }
+
+        // O modelo às vezes devolve a mais; o teto pedido é o que vale.
+        return batch.drafts().stream().limit(count).toList();
     }
 
     private AiRequest request(String system) {
