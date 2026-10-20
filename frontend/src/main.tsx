@@ -7,7 +7,9 @@ import './index.css';
 
 ReactDOM.createRoot(document.getElementById('root')!).render(
   <React.StrictMode>
-    <BrowserRouter>
+    {/* As duas flags adotam desde já o comportamento do React Router 7; sem elas, cada
+        carregamento enche o console com avisos de migração. */}
+    <BrowserRouter future={{ v7_startTransition: true, v7_relativeSplatPath: true }}>
       <AuthProvider>
         <App />
       </AuthProvider>

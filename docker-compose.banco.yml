@@ -1,0 +1,30 @@
+# Uma tela para olhar o banco, sem instalar DBeaver nem pgAdmin.
+#
+# Ligar:
+#   docker compose -f docker-compose.prod.yml -f docker-compose.local.yml -f docker-compose.banco.yml --env-file .env up -d adminer
+#
+# Depois abra http://localhost:8070 e entre com:
+#   Sistema  PostgreSQL
+#   Servidor postgres
+#   Usuário  o DB_USER do seu .env
+#   Senha    o DB_PASSWORD do seu .env
+#   Base     jhcomp_planner
+#
+# Desligar:
+#   docker compose -f docker-compose.prod.yml stop adminer
+
+services:
+  adminer:
+    image: adminer:5.4.1
+    # Uma tela de banco não deve voltar sozinha depois de um reboot: ligue quando precisar.
+    restart: "no"
+    # O serviço só sobe quando você o nomeia no comando acima; um "up -d" solto o ignora.
+    profiles: ["banco"]
+    depends_on:
+      - postgres
+    environment:
+      ADMINER_DEFAULT_SERVER: postgres
+    ports:
+      # O 127.0.0.1 na frente é o que importa: sem ele, qualquer aparelho no mesmo Wi-Fi
+      # abriria esta tela e teria o banco inteiro a um palpite de senha de distância.
+      - "127.0.0.1:8070:8080"

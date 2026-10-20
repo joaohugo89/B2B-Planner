@@ -2,6 +2,7 @@
 node_modules/
 dist/
 target/
+*.tsbuildinfo
 
 # Segredos â€” nada aqui pode ir para o GitHub
 .env
