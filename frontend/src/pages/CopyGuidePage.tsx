@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { Copy, Hash, Pencil, Plus, Send, Settings2, Trash2 } from 'lucide-react';
+import { Copy, FileText, Hash, Pencil, Plus, Send, Settings2, Trash2 } from 'lucide-react';
 import {
   copiesApi,
   hashtagBlocksApi,
@@ -10,9 +10,10 @@ import {
   type Tone,
 } from '../api/services';
 import { describeError } from '../api/client';
+import { PublicacaoEditor } from '../components/PublicacaoEditor';
 import { useApi } from '../api/useApi';
 import { useAuth } from '../auth/AuthContext';
-import { EmptyState, ErrorState, LoadingState, PageHeader } from '../components/primitives';
+import { EmptyState, ErrorState, LoadingState, PageHeader, StatusTag } from '../components/primitives';
 import { ToneManager } from '../components/ToneManager';
 import type { CopyEntry, Post } from '../types/api';
 
@@ -140,6 +141,8 @@ export function CopyGuidePage() {
             onHashtagsChanged={setGlobalHashtags}
           />
         )}
+
+        <LegendasDosPosts posts={posts.data ?? []} onAlterado={posts.reload} />
 
         <div className="flex flex-wrap items-center gap-2">
           <button
@@ -538,6 +541,95 @@ function CopyForm({
         <Send size={14} />
         {busy ? 'Salvando…' : 'Salvar legenda'}
       </button>
+    </section>
+  );
+}
+
+
+/**
+ * As legendas que já estão dentro de um post, reunidas aqui para edição.
+ *
+ * <p>Uma legenda criada pelo assistente ou pelo editor vive no próprio post, não vira entrada
+ * da biblioteca. Sem esta seção, depois que o rascunho virava post a legenda só podia ser
+ * mudada na tela do post — e era fácil achar que estava travada.</p>
+ */
+function LegendasDosPosts({ posts, onAlterado }: { posts: Post[]; onAlterado: () => void }) {
+  const { session } = useAuth();
+  const [editando, setEditando] = useState<number | null>(null);
+  const [aberto, setAberto] = useState(true);
+
+  const comLegenda = posts.filter((post) => (post.caption ?? '').trim().length > 0);
+
+  if (comLegenda.length === 0) {
+    return null;
+  }
+
+  return (
+    <section className="panel flex flex-col gap-3 p-4">
+      <header className="flex flex-wrap items-center gap-2">
+        <FileText size={14} className="text-brand" />
+        <span className="label-code text-brand-soft">
+          Legendas já aplicadas em posts ({comLegenda.length})
+        </span>
+        <button type="button" className="btn-ghost ml-auto" onClick={() => setAberto((v) => !v)}>
+          {aberto ? 'Recolher' : 'Mostrar'}
+        </button>
+      </header>
+
+      <p className="text-xs text-content-muted">
+        Estas legendas vivem dentro do post, inclusive os que já têm arte montada. Editar aqui muda
+        o que vai ser publicado.
+      </p>
+
+      {aberto && (
+        <div className="flex flex-col gap-3">
+          {comLegenda.map((post) => (
+            <article key={post.id} className="flex flex-col gap-2 rounded bg-surface-lowest p-3">
+              <div className="flex flex-wrap items-center gap-2">
+                <span className="label-code rounded bg-surface-high px-2 py-1 text-content-variant">
+                  {post.code}
+                </span>
+                <span className="text-sm font-semibold">{post.title}</span>
+                <StatusTag status={post.status} />
+                {session && editando !== post.id && (
+                  <button
+                    type="button"
+                    className="btn-ghost ml-auto"
+                    onClick={() => setEditando(post.id)}
+                  >
+                    <Pencil size={12} />
+                    Editar
+                  </button>
+                )}
+              </div>
+
+              {editando === post.id ? (
+                <PublicacaoEditor
+                  post={post}
+                  onCancel={() => setEditando(null)}
+                  onSaved={() => {
+                    setEditando(null);
+                    onAlterado();
+                  }}
+                />
+              ) : (
+                <>
+                  <p className="max-h-32 overflow-y-auto whitespace-pre-line rounded bg-surface p-2 text-xs leading-relaxed">
+                    {post.caption}
+                  </p>
+                  {post.hashtags && (
+                    <p className="font-mono text-[11px] text-brand-soft">{post.hashtags}</p>
+                  )}
+                </>
+              )}
+            </article>
+          ))}
+        </div>
+      )}
+
+      {!session && (
+        <p className="text-xs text-content-muted">Entre com sua conta para editar as legendas.</p>
+      )}
     </section>
   );
 }

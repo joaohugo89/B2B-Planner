@@ -1,10 +1,11 @@
 import { useEffect, useState } from 'react';
-import { Copy, Download, Instagram, Loader2, Trash2 } from 'lucide-react';
+import { Copy, Download, Instagram, Loader2, Pencil, Trash2 } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import { instagramApi, postsApi, type PublishStatus } from '../api/services';
 import { describeError } from '../api/client';
 import { useApi } from '../api/useApi';
 import { useAuth } from '../auth/AuthContext';
+import { PublicacaoEditor } from '../components/PublicacaoEditor';
 import { EmptyState, ErrorState, LoadingState, PageHeader, StatusTag } from '../components/primitives';
 import type { Audience, Post, PostStatus } from '../types/api';
 import { assetUrl } from '../api/assetUrl';
@@ -85,6 +86,7 @@ function PostInspector({ code, onDeleted }: { code: string; onDeleted: () => voi
   const [copied, setCopied] = useState(false);
   const [statusBusy, setStatusBusy] = useState(false);
   const [statusError, setStatusError] = useState<string | null>(null);
+  const [editando, setEditando] = useState(false);
   const [confirmingDelete, setConfirmingDelete] = useState(false);
   const [deleting, setDeleting] = useState(false);
 
@@ -202,6 +204,25 @@ function PostInspector({ code, onDeleted }: { code: string; onDeleted: () => voi
             <span className="text-xs text-content-muted">Entre com sua conta para mudar a situação.</span>
           )}
           {statusError && <span className="text-xs text-brand-soft">{statusError}</span>}
+
+          {/* Os textos ficam editáveis depois de criados: o rascunho da IA quase nunca sai pronto. */}
+          {session && !editando && (
+            <button type="button" className="btn-ghost" onClick={() => setEditando(true)}>
+              <Pencil size={12} />
+              Editar textos da publicação
+            </button>
+          )}
+
+          {session && editando && (
+            <PublicacaoEditor
+              post={post}
+              onCancel={() => setEditando(false)}
+              onSaved={() => {
+                setEditando(false);
+                reload();
+              }}
+            />
+          )}
 
           {session && <PublishControl post={post} onPublished={reload} />}
 
