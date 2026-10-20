@@ -1,6 +1,7 @@
 package br.com.jhcomp.planner.ai;
 
 import br.com.jhcomp.planner.ai.AiDtos.ChatMessage;
+import br.com.jhcomp.planner.ai.provider.AnthropicProvider;
 import br.com.jhcomp.planner.ai.AiDtos.DraftResponse;
 import br.com.jhcomp.planner.ai.AiDtos.PostDraft;
 import br.com.jhcomp.planner.post.repository.PostRepository;
@@ -70,9 +71,9 @@ class AiAssistantServiceTest {
                 properties,
                 mock(PostRepository.class),
                 settings,
-                apiKey -> client,
                 usage,
-                new DraftCache(Duration.ofHours(1), Instant::now));
+                new DraftCache(Duration.ofHours(1), Instant::now),
+                List.of(new AnthropicProvider(apiKey -> client)));
     }
 
     private static Message message(String text, long inputTokens, long outputTokens) {
@@ -163,8 +164,9 @@ class AiAssistantServiceTest {
         when(settings.valueOr(eq(SettingsService.AI_API_KEY), any())).thenReturn("");
         AiProperties empty = new AiProperties();
         AiAssistantService disabled = new AiAssistantService(
-                empty, mock(PostRepository.class), settings, apiKey -> mock(AnthropicClient.class),
-                usage, new DraftCache(Duration.ofHours(1), Instant::now));
+                empty, mock(PostRepository.class), settings, usage,
+                new DraftCache(Duration.ofHours(1), Instant::now),
+                List.of(new AnthropicProvider(apiKey -> mock(AnthropicClient.class))));
 
         assertThat(disabled.isEnabled()).isFalse();
         verify(usage, never()).record(any(), any(), anyLong(), anyLong(), any());

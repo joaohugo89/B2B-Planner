@@ -19,6 +19,10 @@ public class SettingsService {
     public static final String INSTAGRAM_REDIRECT_URI = "instagram_redirect_uri";
     public static final String INSTAGRAM_PUBLIC_BASE_URL = "instagram_public_base_url";
     public static final String AI_API_KEY = "ai_api_key";
+    /** Qual serviço atende o assistente: "anthropic" (Claude) ou "openai" (padrão OpenAI). */
+    public static final String AI_PROVIDER = "ai_provider";
+    /** URL base quando o provedor é o padrão OpenAI; vazio usa a da própria OpenAI. */
+    public static final String AI_BASE_URL = "ai_base_url";
     public static final String AI_MODEL = "ai_model";
     /** Instruções extras da marca, somadas ao prompt do sistema. */
     public static final String AI_BRAND_INSTRUCTIONS = "ai_brand_instructions";

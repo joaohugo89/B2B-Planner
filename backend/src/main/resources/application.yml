@@ -60,11 +60,14 @@ jhcomp:
       public-base-url: ${ASSETS_S3_PUBLIC_BASE_URL:}
       path-style-access: ${ASSETS_S3_PATH_STYLE:false}
   ai:
-    api-key: ${ANTHROPIC_API_KEY:}
-    model: claude-opus-5-5
+    # Servico que atende o assistente: anthropic (Claude) ou openai (padrao /chat/completions,
+    # que serve tambem para Groq, OpenRouter e um Ollama local). O painel da conta sobrescreve.
+    provider: ${AI_PROVIDER:anthropic}
+    api-key: ${AI_API_KEY:${ANTHROPIC_API_KEY:}}
+    model: ${AI_MODEL:claude-opus-5-5}
     max-tokens: 16000
-    # Endpoint da API; vazio usa api.anthropic.com.
-    base-url: ${ANTHROPIC_BASE_URL:}
+    # Endpoint da API; vazio usa o endereco padrao do provedor escolhido.
+    base-url: ${AI_BASE_URL:${ANTHROPIC_BASE_URL:}}
     # Esforço padrão do modelo (low/medium/high); o painel da conta pode sobrescrever.
     effort: ${AI_EFFORT:medium}
     # Uma linha JSON por chamada ao Claude, com tokens de entrada e saída.

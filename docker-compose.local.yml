@@ -1,0 +1,11 @@
+# Ajustes para rodar a stack de produção na sua própria máquina.
+# Use sempre junto com o docker-compose.prod.yml:
+#   docker compose -f docker-compose.prod.yml -f docker-compose.local.yml --env-file .env up -d --build
+#
+# Num servidor de verdade, use o docker-compose.prod.yml sozinho.
+
+services:
+  frontend:
+    ports:
+      # A 8080 está ocupada pelo Apache aqui; o painel responde na 8090.
+      - "8090:80"

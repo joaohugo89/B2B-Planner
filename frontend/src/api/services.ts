@@ -269,6 +269,8 @@ export interface IntegrationSettings {
   instagramRedirectUri: string;
   instagramPublicBaseUrl: string;
   aiApiKeyDefined: boolean;
+  aiProvider: string;
+  aiBaseUrl: string;
   aiModel: string;
   aiBrandInstructions: string;
   aiEffort: string;
@@ -287,6 +289,8 @@ export const settingsApi = {
     | 'instagramRedirectUri'
     | 'instagramPublicBaseUrl'
     | 'aiApiKey'
+    | 'aiProvider'
+    | 'aiBaseUrl'
     | 'aiModel'
     | 'aiBrandInstructions'
     | 'aiEffort',

@@ -50,6 +50,11 @@ services:
       INSTAGRAM_APP_SECRET: ${INSTAGRAM_APP_SECRET:-}
       INSTAGRAM_REDIRECT_URI: ${INSTAGRAM_REDIRECT_URI:-}
       INSTAGRAM_PUBLIC_BASE_URL: ${INSTAGRAM_PUBLIC_BASE_URL:-}
+      # Assistente de IA: anthropic (Claude) ou openai (Groq, OpenRouter, OpenAI, Ollama).
+      AI_PROVIDER: ${AI_PROVIDER:-anthropic}
+      AI_API_KEY: ${AI_API_KEY:-}
+      AI_BASE_URL: ${AI_BASE_URL:-}
+      AI_MODEL: ${AI_MODEL:-claude-opus-5-5}
       ANTHROPIC_API_KEY: ${ANTHROPIC_API_KEY:-}
     volumes:
       - uploads:/app/uploads

@@ -15,10 +15,10 @@ import org.springframework.web.bind.annotation.RestController;
 
 @RestController
 @RequestMapping("/api/ai")
-@Tag(name = "Assistente de Conteúdo", description = "Conversa com o Claude para criar posts")
+@Tag(name = "Assistente de Conteúdo", description = "Conversa com o modelo configurado para criar posts")
 public class AiController {
 
-    public record AiStatus(boolean enabled, String model) {
+    public record AiStatus(boolean enabled, String model, String provider) {
     }
 
     private final AiAssistantService service;
@@ -32,7 +32,7 @@ public class AiController {
     /** Público: a UI usa isto para esconder o chat quando não há chave configurada. */
     @GetMapping("/status")
     public AiStatus status() {
-        return new AiStatus(service.isEnabled(), service.model());
+        return new AiStatus(service.isEnabled(), service.model(), service.provider());
     }
 
     @PostMapping("/chat")

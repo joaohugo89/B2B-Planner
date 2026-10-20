@@ -105,7 +105,7 @@ export function UserPanel({ onClose }: { onClose: () => void }) {
                 icon={<Bot size={14} />}
                 label="Assistente de IA"
                 ok={settings.aiReady}
-                detail={settings.aiReady ? `Ativo • ${settings.aiModel}` : 'Sem chave da Anthropic'}
+                detail={settings.aiReady ? `Ativo • ${settings.aiModel}` : 'Sem chave de API configurada'}
               />
 
               {usage && <UsagePanel usage={usage} />}
@@ -185,6 +185,70 @@ function Metric({ label, value }: { label: string; value: string }) {
   );
 }
 
+
+/**
+ * Atalhos dos serviços que o backend sabe usar. Todos abaixo do Claude falam o protocolo
+ * da OpenAI: muda só a URL base, o modelo e a chave.
+ */
+const AI_PRESETS = [
+  {
+    id: 'anthropic',
+    label: 'Claude (Anthropic)',
+    provider: 'anthropic',
+    baseUrl: '',
+    model: 'claude-opus-5-5',
+    hint: 'Pago por uso, com a melhor qualidade de texto. Chave em console.anthropic.com.',
+  },
+  {
+    id: 'groq',
+    label: 'Groq — camada gratuita',
+    provider: 'openai',
+    baseUrl: 'https://api.groq.com/openai/v1',
+    model: 'llama-3.3-70b-versatile',
+    hint: 'Gratuito dentro de um limite diário e sem cartão. Chave em console.groq.com.',
+  },
+  {
+    id: 'openrouter',
+    label: 'OpenRouter — modelos :free',
+    provider: 'openai',
+    baseUrl: 'https://openrouter.ai/api/v1',
+    model: '',
+    hint: 'Vários modelos, alguns gratuitos (nome terminando em :free). Chave em openrouter.ai.',
+  },
+  {
+    id: 'openai',
+    label: 'OpenAI (paga)',
+    provider: 'openai',
+    baseUrl: 'https://api.openai.com/v1',
+    model: 'gpt-5',
+    hint: 'Exige crédito comprado: a OpenAI não tem chave de API gratuita.',
+  },
+  {
+    id: 'ollama',
+    label: 'Ollama — no seu computador',
+    provider: 'openai',
+    baseUrl: 'http://localhost:11434/v1',
+    model: 'llama3.1',
+    hint: 'Custo zero e sem chave (escreva qualquer coisa no campo), mas consome bastante RAM.',
+  },
+  {
+    id: 'custom',
+    label: 'Outro serviço compatível',
+    provider: 'openai',
+    baseUrl: '',
+    model: '',
+    hint: 'Qualquer API no padrão /chat/completions da OpenAI.',
+  },
+] as const;
+
+/** Descobre qual atalho corresponde ao que está salvo, para o select abrir no lugar certo. */
+function aiPresetAtual(provider: string, baseUrl: string) {
+  if (provider !== 'openai') return 'anthropic';
+  const url = (baseUrl ?? '').trim().replace(/\/$/, '');
+  const encontrado = AI_PRESETS.find((item) => item.provider === 'openai' && item.baseUrl === url);
+  return encontrado ? encontrado.id : 'custom';
+}
+
 function IntegrationForm({
   settings,
   canEdit,
@@ -199,6 +263,8 @@ function IntegrationForm({
   const [redirectUri, setRedirectUri] = useState(settings.instagramRedirectUri);
   const [publicBaseUrl, setPublicBaseUrl] = useState(settings.instagramPublicBaseUrl);
   const [aiKey, setAiKey] = useState('');
+  const [aiProvider, setAiProvider] = useState(settings.aiProvider || 'anthropic');
+  const [aiBaseUrl, setAiBaseUrl] = useState(settings.aiBaseUrl ?? '');
   const [aiModel, setAiModel] = useState(settings.aiModel);
   const [aiBrandInstructions, setAiBrandInstructions] = useState(settings.aiBrandInstructions ?? '');
   const [aiEffort, setAiEffort] = useState(settings.aiEffort || 'medium');
@@ -215,6 +281,8 @@ function IntegrationForm({
         instagramAppId: appId,
         instagramRedirectUri: redirectUri,
         instagramPublicBaseUrl: publicBaseUrl,
+        aiProvider,
+        aiBaseUrl,
         aiModel,
         aiBrandInstructions,
         aiEffort,
@@ -277,8 +345,42 @@ function IntegrationForm({
 
       <div className="flex flex-col gap-3">
         <span className="label-code text-content-muted">Assistente de IA</span>
+
+        <label className="flex flex-col gap-1">
+          <span className="label-code text-content-muted">Serviço</span>
+          <select
+            value={aiPresetAtual(aiProvider, aiBaseUrl)}
+            disabled={!canEdit}
+            onChange={(event) => {
+              const preset = AI_PRESETS.find((item) => item.id === event.target.value);
+              if (!preset) return;
+              setAiProvider(preset.provider);
+              setAiBaseUrl(preset.baseUrl);
+              if (preset.model) setAiModel(preset.model);
+            }}
+            className="rounded bg-surface-lowest px-3 py-2 font-mono text-xs outline-none disabled:opacity-60"
+          >
+            {AI_PRESETS.map((preset) => (
+              <option key={preset.id} value={preset.id}>{preset.label}</option>
+            ))}
+          </select>
+          <span className="text-[11px] text-content-muted">
+            {AI_PRESETS.find((item) => item.id === aiPresetAtual(aiProvider, aiBaseUrl))?.hint}
+          </span>
+        </label>
+
+        {aiProvider === 'openai' && (
+          <Field
+            label="URL base"
+            value={aiBaseUrl}
+            onChange={setAiBaseUrl}
+            disabled={!canEdit}
+            hint="Vazio usa a da OpenAI. Deve terminar onde começa /chat/completions."
+          />
+        )}
+
         <SecretField
-          label="Chave da Anthropic"
+          label="Chave de API"
           value={aiKey}
           onChange={setAiKey}
           defined={settings.aiApiKeyDefined}

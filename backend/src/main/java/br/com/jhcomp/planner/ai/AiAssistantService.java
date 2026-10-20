@@ -3,27 +3,25 @@ package br.com.jhcomp.planner.ai;
 import br.com.jhcomp.planner.ai.AiDtos.ChatMessage;
 import br.com.jhcomp.planner.ai.AiDtos.DraftResponse;
 import br.com.jhcomp.planner.ai.AiDtos.PostDraft;
+import br.com.jhcomp.planner.ai.provider.AiProvider;
+import br.com.jhcomp.planner.ai.provider.AiProvider.AiReply;
+import br.com.jhcomp.planner.ai.provider.AiProvider.AiRequest;
 import br.com.jhcomp.planner.post.domain.Post;
 import br.com.jhcomp.planner.post.repository.PostRepository;
 import br.com.jhcomp.planner.settings.SettingsService;
-import com.anthropic.client.AnthropicClient;
-import com.anthropic.errors.AnthropicServiceException;
-import com.anthropic.models.messages.Message;
-import com.anthropic.models.messages.MessageCreateParams;
-import com.anthropic.models.messages.OutputConfig;
-import com.anthropic.models.messages.StructuredMessage;
-import com.anthropic.models.messages.StructuredMessageCreateParams;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;
 
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
+import java.util.function.Function;
 import java.util.stream.Collectors;
 
 /**
- * Conversa com o Claude para planejar e redigir posts da JH.COMP.
- * O cliente é criado sob demanda para que a aplicação suba sem chave de API.
+ * Planeja e redige posts da JH.COMP conversando com o serviço de IA escolhido no painel.
+ * Nada é instanciado na subida: sem chave, a aplicação roda normalmente com o assistente desligado.
  */
 @Service
 public class AiAssistantService {
@@ -33,26 +31,41 @@ public class AiAssistantService {
     /** Níveis de esforço aceitos pelo painel. */
     public static final List<String> EFFORT_LEVELS = List.of("low", "medium", "high");
 
+    /** Serviços que o painel sabe configurar. */
+    public static final List<String> PROVIDERS = List.of("anthropic", "openai");
+
     private final AiProperties properties;
     private final PostRepository posts;
     private final SettingsService settings;
-    private final AnthropicClients clients;
     private final AiUsageService usage;
     private final DraftCache draftCache;
+    private final Map<String, AiProvider> providers;
 
     public AiAssistantService(AiProperties properties, PostRepository posts, SettingsService settings,
-                              AnthropicClients clients, AiUsageService usage, DraftCache draftCache) {
+                              AiUsageService usage, DraftCache draftCache, List<AiProvider> providers) {
         this.properties = properties;
         this.posts = posts;
         this.settings = settings;
-        this.clients = clients;
         this.usage = usage;
         this.draftCache = draftCache;
+        this.providers = providers.stream().collect(Collectors.toMap(AiProvider::id, Function.identity()));
     }
 
     /** Chave do painel do usuário; sem ela, a variável de ambiente. */
     public String apiKey() {
         return settings.valueOr(SettingsService.AI_API_KEY, properties.getApiKey());
+    }
+
+    /** Serviço escolhido no painel: "anthropic" ou "openai". */
+    public String provider() {
+        String value = settings.valueOr(SettingsService.AI_PROVIDER, properties.getProvider());
+        String normalized = value == null ? "" : value.trim().toLowerCase();
+        return providers.containsKey(normalized) ? normalized : "anthropic";
+    }
+
+    /** URL base do provedor; vazia deixa cada um usar o endereço padrão dele. */
+    public String baseUrl() {
+        return settings.valueOr(SettingsService.AI_BASE_URL, properties.getBaseUrl());
     }
 
     public String model() {
@@ -77,33 +90,16 @@ public class AiAssistantService {
     }
 
     public String chat(List<ChatMessage> history) {
-        MessageCreateParams.Builder builder = MessageCreateParams.builder()
-                .model(model())
-                .maxTokens(properties.getMaxTokens())
-                .outputConfig(outputConfig())
-                .system(systemPrompt() + """
+        AiRequest request = request(systemPrompt() + """
 
-                        Responda em português do Brasil, de forma objetiva e no tom técnico-humano da marca.
-                        Quando o usuário pedir um post, entregue título, resumo, legenda completa e hashtags.
-                        """);
+                Responda em português do Brasil, de forma objetiva e no tom técnico-humano da marca.
+                Quando o usuário pedir um post, entregue título, resumo, legenda completa e hashtags.
+                """);
 
-        for (ChatMessage message : history) {
-            if ("assistant".equalsIgnoreCase(message.role())) {
-                builder.addAssistantMessage(message.content());
-            } else {
-                builder.addUserMessage(message.content());
-            }
-        }
+        AiReply<String> reply = current().chat(request, history);
+        usage.record("chat", model(), reply.inputTokens(), reply.outputTokens(), effort());
 
-        Message response = call(() -> client().messages().create(builder.build()));
-        usage.record("chat", model(), response.usage().inputTokens(), response.usage().outputTokens(), effort());
-
-        String text = response.content().stream()
-                .flatMap(block -> block.text().stream())
-                .map(block -> block.text())
-                .collect(Collectors.joining("\n"))
-                .trim();
-
+        String text = reply.content() == null ? "" : reply.content().trim();
         return text.isEmpty() ? "Não consegui gerar uma resposta desta vez. Tente reformular o pedido." : text;
     }
 
@@ -128,45 +124,28 @@ public class AiAssistantService {
                 audience == null || audience.isBlank() ? "decida pelo briefing" : audience,
                 format == null || format.isBlank() ? "decida pelo briefing" : format);
 
-        StructuredMessageCreateParams<PostDraft> params = withEffort(MessageCreateParams.builder()
-                .model(model())
-                .maxTokens(properties.getMaxTokens())
-                .system(systemPrompt())
-                .outputConfig(PostDraft.class)
-                .addUserMessage(instruction)
-                .build());
+        AiReply<PostDraft> reply = current().structured(request(systemPrompt()), instruction, PostDraft.class);
+        usage.record("draft", model(), reply.inputTokens(), reply.outputTokens(), effort());
 
-        StructuredMessage<PostDraft> response = call(() -> client().messages().create(params));
-        usage.record("draft", model(), response.usage().inputTokens(), response.usage().outputTokens(), effort());
-
-        PostDraft draft = response.content().stream()
-                .flatMap(block -> block.text().stream())
-                .map(block -> block.text())
-                .findFirst()
-                .orElseThrow(() -> new AiUnavailableException("O modelo não devolveu um rascunho utilizável."));
+        PostDraft draft = reply.content();
+        if (draft == null) {
+            throw new AiUnavailableException("O modelo não devolveu um rascunho utilizável.");
+        }
 
         draftCache.put(cacheKey, draft);
         return new DraftResponse(draft, false);
     }
 
-    private OutputConfig outputConfig() {
-        return OutputConfig.builder().effort(OutputConfig.Effort.of(effort())).build();
+    private AiRequest request(String system) {
+        return new AiRequest(apiKey(), baseUrl(), model(), effort(), properties.getMaxTokens(), system);
     }
 
-    /**
-     * outputConfig(PostDraft.class) monta um output_config só com o formato. Aqui o esforço
-     * escolhido no painel é somado a esse formato, sem perder o structured output.
-     */
-    private StructuredMessageCreateParams<PostDraft> withEffort(StructuredMessageCreateParams<PostDraft> params) {
-        MessageCreateParams raw = params.rawParams();
-        OutputConfig.Builder config = OutputConfig.builder().effort(OutputConfig.Effort.of(effort()));
-        raw.outputConfig()
-                .flatMap(OutputConfig::format)
-                .ifPresent(config::format);
-
-        return new StructuredMessageCreateParams<>(
-                params.outputType(),
-                raw.toBuilder().outputConfig(config.build()).build());
+    private AiProvider current() {
+        if (!isEnabled()) {
+            throw new AiUnavailableException(
+                    "Assistente desativado: informe a chave de API na aba da sua conta para usá-lo.");
+        }
+        return providers.get(provider());
     }
 
     /** Contexto de marca + o que já está no planner, para o modelo não repetir temas. */
@@ -201,27 +180,5 @@ public class AiAssistantService {
     private String describe(Post post) {
         return "- %s | %s | %s | %s".formatted(
                 post.getCode(), post.getTitle(), post.getAudience(), post.getBrandPillar());
-    }
-
-    private <T> T call(java.util.function.Supplier<T> request) {
-        try {
-            return request.get();
-        } catch (AiUnavailableException ex) {
-            throw ex;
-        } catch (AnthropicServiceException ex) {
-            log.warn("Falha na chamada à API da Anthropic", ex);
-            throw new AiUnavailableException("A API do Claude recusou a requisição: " + ex.getMessage(), ex);
-        } catch (RuntimeException ex) {
-            log.warn("Falha inesperada ao falar com o Claude", ex);
-            throw new AiUnavailableException("Não foi possível falar com o assistente agora.", ex);
-        }
-    }
-
-    private AnthropicClient client() {
-        if (!isEnabled()) {
-            throw new AiUnavailableException(
-                    "Assistente desativado: defina ANTHROPIC_API_KEY (ou jhcomp.ai.api-key) para usá-lo.");
-        }
-        return clients.forKey(apiKey());
     }
 }

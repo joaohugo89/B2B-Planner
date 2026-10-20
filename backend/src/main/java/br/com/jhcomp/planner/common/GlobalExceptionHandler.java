@@ -85,6 +85,14 @@ public class GlobalExceptionHandler {
                 .body(ApiError.of(409, "CONFLICT", "Registro conflita com um já existente.", List.of()));
     }
 
+    /** Valor recusado pela regra de negócio, como uma URL base fora do formato aceito. */
+    @ExceptionHandler(IllegalArgumentException.class)
+    public ResponseEntity<ApiError> handleInvalid(IllegalArgumentException ex) {
+        ErrorLog.registrar(400, "INVALID_VALUE", ex);
+        return ResponseEntity.badRequest()
+                .body(ApiError.of(400, "INVALID_VALUE", ex.getMessage(), List.of()));
+    }
+
     @ExceptionHandler(br.com.jhcomp.planner.ai.AiUnavailableException.class)
     public ResponseEntity<ApiError> handleAi(br.com.jhcomp.planner.ai.AiUnavailableException ex) {
         ErrorLog.registrar(503, "AI_UNAVAILABLE", ex);

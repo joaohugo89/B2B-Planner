@@ -5,7 +5,10 @@ import org.springframework.boot.context.properties.ConfigurationProperties;
 @ConfigurationProperties(prefix = "jhcomp.ai")
 public class AiProperties {
 
-    /** Chave da API Anthropic. Vazia desliga o assistente. */
+    /** Serviço que atende o assistente: "anthropic" ou "openai" (padrão OpenAI). */
+    private String provider = "anthropic";
+
+    /** Chave da API do serviço escolhido. Vazia desliga o assistente. */
     private String apiKey = "";
 
     /** Modelo Claude usado pelo assistente de conteúdo. */
@@ -14,7 +17,10 @@ public class AiProperties {
     /** Teto de tokens por resposta. */
     private long maxTokens = 16000;
 
-    /** Endpoint da API; vazio usa o da Anthropic. Útil para gateway próprio ou teste local. */
+    /**
+     * Endpoint da API; vazio usa o endereço padrão do provedor. No modo openai, é aqui que
+     * entram Groq (https://api.groq.com/openai/v1), OpenRouter ou um Ollama local.
+     */
     private String baseUrl = "";
 
     /** Esforço do modelo quando o painel não define outro: low, medium ou high. */
@@ -25,6 +31,9 @@ public class AiProperties {
 
     /** Minutos que um rascunho fica guardado em memória. */
     private long draftCacheMinutes = 60;
+
+    public String getProvider() { return provider; }
+    public void setProvider(String provider) { this.provider = provider; }
 
     public String getApiKey() { return apiKey; }
     public void setApiKey(String apiKey) { this.apiKey = apiKey; }

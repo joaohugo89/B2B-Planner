@@ -1,6 +1,7 @@
 package br.com.jhcomp.planner.settings;
 
 import br.com.jhcomp.planner.ai.AiAssistantService;
+import br.com.jhcomp.planner.ai.provider.OpenAiCompatibleProvider;
 import br.com.jhcomp.planner.instagram.InstagramService;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.constraints.Size;
@@ -25,6 +26,8 @@ public class IntegrationSettingsController {
             String instagramRedirectUri,
             String instagramPublicBaseUrl,
             boolean aiApiKeyDefined,
+            String aiProvider,
+            String aiBaseUrl,
             String aiModel,
             String aiBrandInstructions,
             String aiEffort,
@@ -39,6 +42,8 @@ public class IntegrationSettingsController {
             @Size(max = 300) String instagramRedirectUri,
             @Size(max = 300) String instagramPublicBaseUrl,
             @Size(max = 200) String aiApiKey,
+            @Size(max = 20) String aiProvider,
+            @Size(max = 300) String aiBaseUrl,
             @Size(max = 80) String aiModel,
             @Size(max = 4000) String aiBrandInstructions,
             @Size(max = 10) String aiEffort) {
@@ -66,6 +71,8 @@ public class IntegrationSettingsController {
         settings.save(SettingsService.INSTAGRAM_REDIRECT_URI, request.instagramRedirectUri());
         settings.save(SettingsService.INSTAGRAM_PUBLIC_BASE_URL, request.instagramPublicBaseUrl());
         settings.save(SettingsService.AI_API_KEY, request.aiApiKey());
+        settings.save(SettingsService.AI_PROVIDER, normalizeProvider(request.aiProvider()));
+        settings.save(SettingsService.AI_BASE_URL, checkBaseUrl(request.aiBaseUrl()));
         settings.save(SettingsService.AI_MODEL, request.aiModel());
         settings.save(SettingsService.AI_BRAND_INSTRUCTIONS, request.aiBrandInstructions());
         settings.save(SettingsService.AI_EFFORT, normalizeEffort(request.aiEffort()));
@@ -79,11 +86,38 @@ public class IntegrationSettingsController {
                 instagram.redirectUri(),
                 instagram.publicBaseUrl(),
                 ai.isEnabled(),
+                ai.provider(),
+                ai.baseUrl(),
                 ai.model(),
                 ai.brandInstructions(),
                 ai.effort(),
                 instagram.isConfigured(),
                 ai.isEnabled());
+    }
+
+    /** URL torta e recusada na hora de salvar, em vez de falhar só quando o assistente é usado. */
+    private String checkBaseUrl(String baseUrl) {
+        if (baseUrl == null || baseUrl.isBlank()) {
+            return baseUrl;
+        }
+        String trimmed = baseUrl.trim();
+        if (!OpenAiCompatibleProvider.isValidBaseUrl(trimmed)) {
+            throw new IllegalArgumentException(
+                    "URL base inválida. Use o endereço do serviço, como https://api.groq.com/openai/v1.");
+        }
+        return trimmed;
+    }
+
+    /** Provedor desconhecido nao e gravado: o assistente continua no servico atual. */
+    private String normalizeProvider(String provider) {
+        if (provider == null) {
+            return null;
+        }
+        String normalized = provider.trim().toLowerCase();
+        if (normalized.isEmpty() || AiAssistantService.PROVIDERS.contains(normalized)) {
+            return normalized;
+        }
+        return null;
     }
 
     /** Nível desconhecido não é gravado: o assistente continua no esforço atual. */

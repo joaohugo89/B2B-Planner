@@ -28,7 +28,7 @@ cd backend
 $env:DB_URL = "jdbc:postgresql://127.0.0.1:5440/jhcomp_planner"
 $env:DB_USER = "postgres"
 $env:DB_PASSWORD = "postgres"
-$env:ANTHROPIC_API_KEY = "sk-ant-..."   # opcional: liga o Assistente IA
+$env:AI_API_KEY = "sk-ant-..."          # opcional: liga o Assistente IA
 mvn spring-boot:run
 ```
 
@@ -168,14 +168,21 @@ não é republicado.
 Página vale ~60 dias (reconecte quando expirar — a tela mostra a validade). Stories e Reels não
 estão implementados aqui.
 
-### Assistente de conteúdo (Claude)
+### Assistente de conteúdo
 
-O backend fala com a API da Anthropic (modelo `claude-opus-5-5`, configurável em `jhcomp.ai.model`).
-Sem `ANTHROPIC_API_KEY` a aplicação sobe normalmente e o assistente aparece desativado na UI.
+O serviço de IA é escolhido na aba da sua conta: **Claude (Anthropic)** ou qualquer API no padrão
+`/chat/completions` da OpenAI — o que inclui **Groq** e **OpenRouter**, que têm camada gratuita, a
+OpenAI paga e um **Ollama** rodando na sua máquina. Sem chave, a aplicação sobe normalmente e o
+assistente aparece desativado na UI.
+
+O passo a passo de cada serviço está em [docs/ASSISTENTE-IA.md](docs/ASSISTENTE-IA.md).
 
 ```bash
-# PowerShell
-$env:ANTHROPIC_API_KEY = "sk-ant-..."
+# PowerShell: Groq (gratuito), já de pé no primeiro boot
+$env:AI_PROVIDER = "openai"
+$env:AI_BASE_URL = "https://api.groq.com/openai/v1"
+$env:AI_MODEL    = "llama-3.3-70b-versatile"
+$env:AI_API_KEY  = "gsk_..."
 ```
 
 | Método | Rota | Descrição |
@@ -374,6 +381,13 @@ produção.
    docker compose -f docker-compose.prod.yml --env-file .env up -d --build
    ```
 
+   Para rodar essa mesma stack na sua máquina (o painel vai para a 8090, já que o Apache usa a
+   8080) e para os comandos do dia a dia, veja [docs/DOCKER.md](docs/DOCKER.md):
+
+   ```bash
+   docker compose -f docker-compose.prod.yml -f docker-compose.local.yml --env-file .env up -d --build
+   ```
+
    O frontend sobe na porta 8080 (nginx) e o backend na 8081. Ponha um proxy com HTTPS na frente
    (Caddy, Traefik ou o do próprio provedor) apontando cada domínio para a sua porta.
 
@@ -406,7 +420,9 @@ Opcionais, por funcionalidade:
 | `INSTAGRAM_APP_ID` / `INSTAGRAM_APP_SECRET` | App da Meta; sem elas a publicação fica desativada |
 | `INSTAGRAM_REDIRECT_URI` | Callback do OAuth, ex.: `https://planner.exemplo.com/instagram/callback` |
 | `INSTAGRAM_PUBLIC_BASE_URL` | Base HTTPS pública do backend, de onde a Meta baixa as imagens |
-| `ANTHROPIC_API_KEY` | Liga o Assistente IA; sem ela a tela aparece desativada |
+| `AI_API_KEY` (ou `ANTHROPIC_API_KEY`) | Liga o Assistente IA; sem ela a tela aparece desativada |
+| `AI_PROVIDER` | `anthropic` (Claude) ou `openai` (Groq, OpenRouter, OpenAI, Ollama) |
+| `AI_BASE_URL` / `AI_MODEL` | Endereço e modelo do serviço escolhido; veja docs/ASSISTENTE-IA.md |
 | `JHCOMP_ADMIN_PASSWORD` | Define a senha do admin no primeiro boot em vez de sortear uma |
 
 ### 4.3 Uploads num bucket (S3 ou Cloudflare R2)
