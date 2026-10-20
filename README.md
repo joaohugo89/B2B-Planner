@@ -11,7 +11,7 @@ detalhados, guia de copy e central de assets/templates. Identidade visual dark i
 ├── docker-compose.yml        PostgreSQL 18 avulso (modo desenvolvimento)
 ├── docker-compose.local.yml  Portas desta máquina, usado junto com o de produção
 ├── docker-compose.tunnel.yml Link temporário (Cloudflare) para acessar de fora
-├── docker-compose.dominio.yml Endereço fixo em planner.joaohugo.com
+├── docker-compose.dominio.yml Endereço fixo em planner.seu-dominio.com
 └── docker-compose.prod.yml   Stack de produção (backend + frontend + Postgres)
 ```
 
@@ -42,8 +42,10 @@ npm install   # só na primeira vez
 npm run dev
 ```
 
-Depois abra http://localhost:5173 e entre com `admin@jhcomp.com.br` / `jhcomp@2026`
-(só as escritas exigem login; a leitura do planner é pública).
+Depois abra http://localhost:5173 e entre com `admin@jhcomp.com.br`. A senha é a que você
+definiu em `JHCOMP_ADMIN_PASSWORD`; sem essa variável, o backend sorteia uma no primeiro boot
+e a imprime no log uma única vez. Sem login, o planner mostra apenas o Feed Grid com os posts
+já finalizados.
 
 Para parar o banco no fim do dia: `.\scripts\pg-local.ps1 stop`.
 
@@ -201,13 +203,39 @@ $env:AI_API_KEY  = "gsk_..."
 
 | Método | Rota | Descrição |
 | --- | --- | --- |
-| GET | `/api/ai/status` | Diz se o assistente está configurado (público) |
-| POST | `/api/ai/chat` | Conversa com histórico `[{role, content}]` (exige JWT) |
-| POST | `/api/ai/draft` | Gera um post completo a partir de um briefing (exige JWT) |
+| GET | `/api/ai/status` | Diz se o assistente está configurado |
+| POST | `/api/ai/chat` | Conversa com histórico `[{role, content}]` |
+| POST | `/api/ai/draft` | Gera **um** post completo a partir de um briefing |
+| POST | `/api/ai/drafts` | Lê uma conversa inteira e devolve **até 5** posts, um por ideia |
+
+Todas exigem JWT.
 
 O `/draft` devolve o rascunho com título, pilar, formato, público, resumo, legenda, hashtags e CTA
 já nos campos do planner — no Claude via structured outputs do próprio protocolo, nos demais
-pedindo JSON e tolerando resposta cercada por ```json — a tela **Assistente IA** salva isso como post em rascunho.
+pedindo JSON e tolerando resposta cercada por ```json.
+
+#### Chat e gerador são chamadas independentes
+
+O modelo não guarda memória entre uma chamada e outra: o `/chat` funciona porque o frontend
+reenvia todo o histórico a cada mensagem, e o `/draft` recebe apenas o briefing. Uma conversa
+não "vaza" para o gerador por acidente.
+
+Duas pontes ligam os dois lados na tela **Assistente IA**:
+
+- **"usar como briefing"**, embaixo de cada resposta do chat, copia aquele texto para o campo de
+  briefing (cortado nos 2000 caracteres aceitos).
+- **"Transformar em posts"** manda a conversa para o `/api/ai/drafts`, que escolhe as ideias mais
+  distintas e devolve um post completo para cada. Cada resultado tem seu próprio botão de salvar:
+  o modelo pode acertar três de quatro.
+
+Nada disso é gravado antes de você salvar. Conversa, briefing e posts gerados vivem só na memória
+da tela e são descartados ao sair — assim o planner não enche de rascunho que ninguém aprovou.
+
+Dois detalhes de robustez que o uso real exigiu: a descrição do formato esperado desce até os
+campos de dentro de uma lista (sem isso o modelo devolvia metade dos campos em branco num lote),
+e valores em texto livre são normalizados antes de virar post — `Carrossel`, `CAROUSEL` e
+`Carousel (vídeo)` chegam todos como `CARROSSEL`, e o que não bate cai no que você escolheu nos
+seletores.
 
 ### Endpoints principais
 
@@ -354,7 +382,7 @@ configuração extra é necessária em desenvolvimento. Para apontar para outra 
 `VITE_API_BASE_URL` — é o que cobre o cenário de **domínios separados** (ver "Colocar no ar").
 
 Telas: **Editor de Posts** (monta a arte sobre os templates e baixa o PNG), **Assistente IA**
-(chat com o Claude + gerador de post que salva direto no planner), **Feed Grid** (grid 4:5 / 1:1 com tags de status, métricas e cópia rápida de legenda),
+(chat + gerador de post que salva direto no planner, com transformação da conversa em vários posts), **Feed Grid** (grid 4:5 / 1:1 com tags de status, métricas e cópia rápida de legenda),
 **Posts Detalhados** (renderizador 1080×1350 + metadados), **Guia de Copy** (filtro por tom,
 copiar legenda + hashtags) e **Exportador de Templates** (catálogo por categoria).
 
@@ -407,16 +435,35 @@ produção.
    O frontend sobe na porta 8080 (nginx) e o backend na 8081. Ponha um proxy com HTTPS na frente
    (Caddy, Traefik ou o do próprio provedor) apontando cada domínio para a sua porta.
 
-   Para publicar em **https://planner.joaohugo.com** a partir desta própria máquina, sem abrir
+   Para publicar em **https://planner.seu-dominio.com** a partir desta própria máquina, sem abrir
    porta no roteador e com HTTPS pronto, use o `docker-compose.dominio.yml`: o passo a passo
    está em [docs/DOMINIO.md](docs/DOMINIO.md).
 
    Em um PaaS que constrói imagens, aponte dois serviços para `backend/Dockerfile` e
    `frontend/Dockerfile` e passe `VITE_API_BASE_URL` como *build arg* do frontend.
 
-5. **Pegue a senha do admin.** No primeiro boot com o banco vazio, o backend gera uma senha
-   aleatória e a imprime **uma única vez** no log. Guarde-a (ou defina `JHCOMP_ADMIN_PASSWORD`
-   antes do primeiro boot) e troque-a depois de entrar.
+5. **Entre no painel.** O usuário é `admin@jhcomp.com.br` e a senha é a que você pôs em
+   `JHCOMP_ADMIN_PASSWORD` no `.env`:
+
+   ```bash
+   grep JHCOMP_ADMIN_PASSWORD .env
+   ```
+
+   Se você subir sem definir essa variável, o backend sorteia uma senha e a imprime **uma única
+   vez** no log, assim:
+
+   ```bash
+   docker compose -f docker-compose.prod.yml logs backend | grep -A2 "Senha gerada"
+   ```
+
+   > Essa variável só tem efeito **no primeiro boot**, quando o usuário admin é criado. Depois
+   > disso, mudar o `.env` não muda a senha de quem já existe. Para voltar a uma senha conhecida
+   > sem perder os posts, apague só o usuário e reinicie o backend — ele recria o admin com a
+   > senha do `.env`:
+   >
+   > ```bash
+   > docker compose -f docker-compose.prod.yml exec postgres psql -U jhcomp -d jhcomp_planner -c "delete from app_users"
+   > ```
 
 6. **Instagram, se for publicar.** A Meta busca as imagens no seu servidor, então o backend precisa
    estar acessível por **HTTPS público** e `INSTAGRAM_PUBLIC_BASE_URL` precisa apontar para ele.
@@ -602,11 +649,16 @@ imprimindo os comandos de build — em vez de estourar um erro de comando não e
   validado nos dois caminhos — cancelando na confirmação (nada alterado) e restaurando os uploads
   com `-SomenteUploads -Force`; `scripts/deploy.ps1` para com código 1 listando as variáveis que
   faltam e, com todas presentes, chega à etapa 4 e avisa que não há Docker.
+- Conversa em posts (20/10/2026): o `/api/ai/drafts` leu uma conversa de três ideias e devolveu
+  três posts completos em 3,6 s pelo Groq, com formato, público e número de slides preenchidos;
+  o salvamento individual pela tela criou o post no planner. Os testes foram apagados depois.
+- Visitante sem conta (20/10/2026): só o Feed Grid aparece no menu, `/studio` e as demais rotas
+  redirecionam, e as APIs dessas telas respondem 401 — conferido tela a tela e rota a rota.
 - Assistente de IA (19/10/2026): o provedor configurável foi exercitado contra três serviços —
   um servidor local simulando o protocolo da OpenAI, o Google Gemini e o Groq. Com o Groq
   (`openai/gpt-oss-120b`), chat em ~0,7 s, rascunho estruturado em ~1,5 s, cache do rascunho
   devolvendo em 10 ms sem nova chamada e consumo de tokens registrado por operação.
-- Endereço fixo (20/10/2026): com o `docker-compose.dominio.yml` no ar, **https://planner.joaohugo.com**
+- Endereço fixo (20/10/2026): com o `docker-compose.dominio.yml` no ar, **https://planner.seu-dominio.com**
   respondeu com certificado válido — painel, rotas do React Router, API em `/api`, imagens dos
   templates, login e assistente de IA (chat em 1,1 s, rascunho em 1,6 s pelo Groq); escrita sem
   token continuou em 401.

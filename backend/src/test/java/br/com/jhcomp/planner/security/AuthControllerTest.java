@@ -37,7 +37,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 class AuthControllerTest {
 
     private static final String EMAIL = "admin@jhcomp.com.br";
-    private static final String PASSWORD = "jhcomp@2026";
+    private static final String PASSWORD = "senha-apenas-deste-teste";
 
     @Autowired
     private MockMvc mockMvc;

@@ -1,4 +1,4 @@
-# Endereço fixo: https://planner.joaohugo.com, no ar enquanto o container estiver rodando.
+# Endereço fixo: https://planner.seu-dominio.com, no ar enquanto o container estiver rodando.
 #
 # Diferente do docker-compose.tunnel.yml, que sorteia um endereço novo a cada vez, aqui o
 # túnel é nomeado e amarrado ao seu domínio na Cloudflare. O passo a passo para gerar o

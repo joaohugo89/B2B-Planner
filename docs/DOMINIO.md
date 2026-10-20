@@ -1,11 +1,11 @@
-# planner.joaohugo.com — endereço fixo para o planner
+# Endereço fixo para o planner, no seu próprio domínio
 
-O `joaohugo.com` já usa os servidores de nome da Cloudflare (`camilo` e `meera.ns.cloudflare.com`),
-que é exatamente o que esta configuração precisa. O subdomínio `planner` ainda não existe e será
-criado pelo próprio túnel.
+Pré-requisito: o seu domínio precisa usar os servidores de nome da Cloudflare. Confira com
+`nslookup -type=NS seu-dominio.com` — se as respostas terminarem em `ns.cloudflare.com`, está
+pronto. O subdomínio `planner` não precisa existir: ele é criado pelo próprio túnel.
 
 Como funciona: o container `dominio` abre uma conexão **de dentro para fora** até a Cloudflare, e
-ela entrega as visitas de `planner.joaohugo.com` por dentro dessa conexão. Você não abre porta
+ela entrega as visitas de `planner.seu-dominio.com` por dentro dessa conexão. Você não abre porta
 nenhuma no roteador, não expõe o seu IP e ganha HTTPS pronto.
 
 Com o container parado, o endereço mostra a página de erro 1033 da Cloudflare. Nada da sua
@@ -19,7 +19,7 @@ Esta parte é na sua conta — eu não tenho acesso a ela.
 
 ### 1. Abra o painel do Zero Trust
 
-Entre em **https://one.dash.cloudflare.com** com a conta dona do `joaohugo.com`.
+Entre em **https://one.dash.cloudflare.com** com a conta dona do `seu-dominio.com`.
 
 Na primeira vez, a Cloudflare pede para escolher um plano: use o **Free**. Ele pede um cartão
 para confirmar, mas não cobra nada neste uso.
@@ -54,7 +54,7 @@ Ainda na Cloudflare, abra a aba de rotas do túnel (**Published application rout
 | Campo | Valor |
 |---|---|
 | Subdomain | `planner` |
-| Domain | `joaohugo.com` |
+| Domain | `seu-dominio.com` |
 | Path | *(vazio)* |
 | Service URL | `http://frontend:80` |
 
@@ -71,7 +71,7 @@ Ainda na Cloudflare, abra a aba de rotas do túnel (**Published application rout
 docker compose -f docker-compose.prod.yml -f docker-compose.local.yml -f docker-compose.dominio.yml --env-file .env up -d
 ```
 
-Em menos de um minuto, **https://planner.joaohugo.com** responde.
+Em menos de um minuto, **https://planner.seu-dominio.com** responde.
 
 ---
 
@@ -103,8 +103,8 @@ docker compose -f docker-compose.prod.yml logs dominio | grep -i "registered\|er
 
 Na aba da sua conta, preencha:
 
-- **URL pública do backend:** `https://planner.joaohugo.com`
-- **URI de redirecionamento:** `https://planner.joaohugo.com/instagram/callback`
+- **URL pública do backend:** `https://planner.seu-dominio.com`
+- **URI de redirecionamento:** `https://planner.seu-dominio.com/instagram/callback`
 
 E ponha essa mesma URI no app da Meta. Agora que o endereço é fixo, isso é configurado uma vez e
 não muda mais — era justamente o que o link temporário não permitia.
@@ -115,7 +115,7 @@ não muda mais — era justamente o que o link temporário não permitia.
 exige login. Como agora o endereço é fixo e fácil de adivinhar, vale fechar o acesso:
 
 **Zero Trust → Access → Applications → Add an application → Self-hosted**, apontando para
-`planner.joaohugo.com`, com uma política que permita só o seu e-mail. A Cloudflare passa a pedir
+`planner.seu-dominio.com`, com uma política que permita só o seu e-mail. A Cloudflare passa a pedir
 uma confirmação por e-mail antes de deixar qualquer um chegar ao planner, e o login do planner
 continua valendo por dentro.
 
@@ -152,7 +152,7 @@ Acontece quando você tentou acessar o endereço **antes** de criar a rota: o ro
 "não existe" e repete essa resposta por um tempo. Dá para confirmar assim:
 
 ```powershell
-Resolve-DnsName planner.joaohugo.com -Server 192.168.0.1
+Resolve-DnsName planner.seu-dominio.com -Server 192.168.0.1
 ```
 
 Se isso falhar e o mesmo comando com `-Server 1.1.1.1` funcionar, é só o cache do roteador.
@@ -163,14 +163,14 @@ O `ipconfig /flushdns` não resolve, porque limpa o cache do Windows, não o del
 Se não der para reiniciar agora, um atalho temporário, no PowerShell **como administrador**:
 
 ```powershell
-Add-Content -Path "$env:windir\System32\drivers\etc\hosts" -Value "`n104.21.48.120 planner.joaohugo.com  # temporario ate o roteador atualizar"
+Add-Content -Path "$env:windir\System32\drivers\etc\hosts" -Value "`n104.21.48.120 planner.seu-dominio.com  # temporario ate o roteador atualizar"
 ```
 
 Isso fixa um IP da Cloudflare só para o seu PC. Como esse IP pode mudar um dia, tire a linha
 assim que o roteador atualizar:
 
 ```powershell
-(Get-Content "$env:windir\System32\drivers\etc\hosts") | Where-Object { $_ -notmatch 'planner.joaohugo.com' } | Set-Content "$env:windir\System32\drivers\etc\hosts"
+(Get-Content "$env:windir\System32\drivers\etc\hosts") | Where-Object { $_ -notmatch 'planner.seu-dominio.com' } | Set-Content "$env:windir\System32\drivers\etc\hosts"
 ```
 
 ---

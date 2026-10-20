@@ -5,7 +5,7 @@
     Uso:
       .\scripts\backup.ps1
       .\scripts\backup.ps1 -Destino D:\Backups
-      .\scripts\backup.ps1 -DbName jhcomp_planner -DbUser jhcomp -DbPassword jhcomp
+      .\scripts\backup.ps1 -DbName jhcomp_planner -DbUser jhcomp -DbPassword <a senha do banco>
 
     Destino padrão: %USERPROFILE%\Backups
     Nome do arquivo: jhcomp-planner-backup-AAAA-MM-DD-HHmmss.zip
@@ -24,7 +24,8 @@ param(
     [int]$DbPort = 5432,
     [string]$DbName = 'jhcomp_planner',
     [string]$DbUser = 'jhcomp',
-    [string]$DbPassword = 'jhcomp',
+    # Sem o parametro, vale a variavel de ambiente DB_PASSWORD.
+    [string]$DbPassword = $env:DB_PASSWORD,
 
     [string]$BinDir = 'C:\Program Files\PostgreSQL\18\bin',
 

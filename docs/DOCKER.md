@@ -81,6 +81,19 @@ Pronto:
 | API | http://localhost:8081 |
 | Banco (DBeaver, pgAdmin, psql) | `localhost:5440` |
 
+### As senhas do projeto não se misturam
+
+São três coisas diferentes, e é fácil confundir ao ler o log:
+
+| Para quê | Onde fica | Quando você usa |
+|---|---|---|
+| **Entrar no painel** | `JHCOMP_ADMIN_PASSWORD` no `.env` | na tela de login, com `admin@jhcomp.com.br` |
+| **Acessar o banco** | `DB_PASSWORD` no `.env` | no DBeaver, pgAdmin ou psql — nunca no painel |
+| ~~`Using generated security password`~~ | aparecia no log do backend | **nunca**: era um usuário de exemplo do Spring Boot, que o planner não usa |
+
+A terceira linha some a partir desta versão: o planner desativou essa autoconfiguração, porque
+ela imprimia a cada boot um código que parecia uma credencial e não abria nada.
+
 ### Login do painel
 
 - **Usuário:** `admin@jhcomp.com.br`
@@ -132,6 +145,11 @@ docker compose -f docker-compose.prod.yml exec postgres psql -U jhcomp -d jhcomp
 | Usuário | o `DB_USER` do seu `.env` (`jhcomp`) |
 | Senha | o `DB_PASSWORD` do seu `.env` |
 
+> A porta 5440 atende **apenas nesta máquina** (`127.0.0.1`), de propósito: um banco publicado
+> para o Wi-Fi inteiro deixa todos os dados a um palpite de senha de distância. O mesmo vale
+> para a API em 8081 e para o Adminer em 8070. Só o painel, na 8090, fica aberto na rede, para
+> você abrir pelo celular em casa.
+>
 > A porta 5440 é a saída do container. As portas 5432 a 5437 já são das instâncias do PostgreSQL
 > instaladas no Windows — por isso o container usa uma porta mais alta, e os dois mundos convivem
 > sem conflito. **São bancos diferentes:** mudar algo numa porta não muda nada na outra.
@@ -174,7 +192,7 @@ Mexeu só no frontend? Troque o final por `--build frontend` e sobe mais rápido
 
 ---
 
-## Endereço fixo (planner.joaohugo.com)
+## Endereço fixo (planner.seu-dominio.com)
 
 Para um endereço que não muda, use o `docker-compose.dominio.yml`: o passo a passo está em
 [DOMINIO.md](DOMINIO.md). É o indicado para usar o Instagram, que exige uma URI de

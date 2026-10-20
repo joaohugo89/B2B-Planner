@@ -21,7 +21,8 @@ param(
     [int]$DbPort = 5432,
     [string]$DbName = 'jhcomp_planner',
     [string]$DbUser = 'jhcomp',
-    [string]$DbPassword = 'jhcomp',
+    # Sem o parametro, vale a variavel de ambiente DB_PASSWORD.
+    [string]$DbPassword = $env:DB_PASSWORD,
 
     [string]$BinDir = 'C:\Program Files\PostgreSQL\18\bin',
 

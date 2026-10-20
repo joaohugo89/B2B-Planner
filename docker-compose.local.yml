@@ -6,14 +6,25 @@
 #
 # O "!override" existe porque o Compose SOMA as listas de portas dos dois arquivos: sem ele, o
 # painel ficaria publicado na 8080 e na 8090 ao mesmo tempo.
+#
+# O "127.0.0.1:" na frente de uma porta é o que a mantém fora do alcance do resto da rede.
+# Sem esse prefixo, o Docker publica em 0.0.0.0 e qualquer aparelho no mesmo Wi-Fi alcança.
 
 services:
   postgres:
     ports: !override
       # As portas 5432 a 5437 são das instâncias do PostgreSQL instaladas no Windows.
-      # O banco do container atende na 5440, para DBeaver, pgAdmin ou psql.
-      - "5440:5432"
+      # O banco do container atende na 5440, para DBeaver, pgAdmin ou psql — só desta máquina:
+      # um banco aberto para a rede é senha única entre um aparelho invadido e todos os dados.
+      - "127.0.0.1:5440:5432"
+
+  backend:
+    ports: !override
+      # A API já é servida pelo nginx do frontend em /api; esta porta fica para depurar daqui.
+      - "127.0.0.1:8081:8081"
 
   frontend:
     ports: !override
+      # Esta continua aberta na rede de propósito: é como você abre o painel pelo celular
+      # em casa. O conteúdo é o mesmo que o endereço público já entrega.
       - "8090:80"
