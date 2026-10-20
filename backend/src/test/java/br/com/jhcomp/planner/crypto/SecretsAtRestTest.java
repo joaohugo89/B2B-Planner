@@ -117,4 +117,21 @@ class SecretsAtRestTest {
         assertThat(settings.find(SettingsService.AI_API_KEY)).isEmpty();
         assertThat(settings.valueOr(SettingsService.AI_API_KEY, "do-ambiente")).isEqualTo("do-ambiente");
     }
+
+    @Test
+    @DisplayName("segredo cifrado com outra chave vale como nao configurado, sem derrubar nada")
+    void secretFromAnotherKeyIsTreatedAsMissing() {
+        // Banco restaurado de outra instalacao: o valor esta cifrado com uma chave que nao temos.
+        String deOutraInstalacao = new CryptoService("uma-chave-completamente-diferente-aqui").encrypt(API_KEY);
+        em.createNativeQuery("INSERT INTO app_settings (setting_key, setting_value, updated_at) "
+                        + "VALUES (:k, :v, CURRENT_TIMESTAMP)")
+                .setParameter("k", SettingsService.AI_API_KEY)
+                .setParameter("v", deOutraInstalacao)
+                .executeUpdate();
+        em.flush();
+        em.clear();
+
+        assertThat(settings.find(SettingsService.AI_API_KEY)).isEmpty();
+        assertThat(settings.valueOr(SettingsService.AI_API_KEY, "do-ambiente")).isEqualTo("do-ambiente");
+    }
 }

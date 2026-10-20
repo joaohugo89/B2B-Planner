@@ -12,6 +12,7 @@ o mesmo protocolo da OpenAI — e é por isso que o painel aceita todos eles.
 
 | Serviço | Custo | Onde pegar a chave |
 |---|---|---|
+| **Google Gemini** | Gratuito dentro de um limite diário | aistudio.google.com/apikey |
 | **Groq** | Gratuito dentro de um limite diário, sem cartão | console.groq.com |
 | **OpenRouter** | Tem modelos gratuitos (nome terminando em `:free`) | openrouter.ai |
 | **Ollama** | Zero, roda no seu computador | não precisa de chave |
@@ -34,11 +35,42 @@ definida ou não.
 
 | Serviço | Modelo |
 |---|---|
-| Groq | `llama-3.3-70b-versatile` |
+| Gemini | `gemini-3.8-flash` |
+| Groq | `openai/gpt-oss-120b` (testado aqui) ou `llama-3.3-70b-versatile` |
 | OpenRouter | qualquer um com `:free` no fim, copiado do catálogo deles |
 | Ollama | `llama3.1` (rode antes `ollama pull llama3.1`) |
 | Claude | `claude-opus-5-5` |
 | OpenAI | `gpt-5` |
+
+### Gemini: a URL base tem um caminho
+
+O endereço do Gemini **não** é o domínio puro. O modo compatível com a OpenAI fica em:
+
+```
+https://generativelanguage.googleapis.com/v1beta/openai
+```
+
+Usar `https://generativelanguage.googleapis.com` sem o `/v1beta/openai` devolve **404**, porque
+o caminho `/chat/completions` não existe na raiz. O atalho "Google Gemini" no painel já preenche
+o endereço certo.
+
+O outro 404 comum é o nome do modelo. O Google aposenta modelos e a própria mensagem de erro diz
+qual usar no lugar — vale ler o aviso que aparece no painel. Para ver os modelos que a sua chave
+alcança:
+
+```bash
+curl -s "https://generativelanguage.googleapis.com/v1beta/openai/models" -H "Authorization: Bearer SUA_CHAVE"
+```
+
+### Gemini grátis é lento, e às vezes recusa
+
+Medido nesta máquina: a mesma pergunta levou de **5 segundos a 3 minutos**, e parte das chamadas
+voltou com "This model is currently experiencing high demand". Isso é a fila da camada gratuita
+do Google, não configuração errada — o painel espera até 5 minutos por uma resposta e avisa
+quando o modelo recusa.
+
+Se a espera incomodar, o **Groq** costuma responder em poucos segundos e também é gratuito; a
+troca leva dois cliques na aba da sua conta.
 
 ### Ollama: dois detalhes
 

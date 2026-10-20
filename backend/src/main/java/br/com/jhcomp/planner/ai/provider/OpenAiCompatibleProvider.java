@@ -12,6 +12,7 @@ import org.springframework.web.client.RestClient;
 import org.springframework.web.client.RestClientResponseException;
 
 import java.io.IOException;
+import java.nio.charset.StandardCharsets;
 import java.net.HttpURLConnection;
 import java.net.URI;
 import java.net.URISyntaxException;
@@ -49,7 +50,7 @@ public class OpenAiCompatibleProvider implements AiProvider {
             }
         };
         factory.setConnectTimeout(Duration.ofSeconds(15));
-        factory.setReadTimeout(Duration.ofMinutes(3));
+        factory.setReadTimeout(Duration.ofMinutes(5));
 
         this.http = builder.requestFactory(factory).build();
         this.mapper = mapper;
@@ -106,29 +107,43 @@ public class OpenAiCompatibleProvider implements AiProvider {
             return enviar(request, body);
         } catch (RestClientResponseException ex) {
             // Os modelos novos da OpenAI recusam max_tokens e exigem max_completion_tokens.
-            if (ex.getResponseBodyAsString().contains("max_completion_tokens")) {
-                body.remove("max_tokens");
-                body.put("max_completion_tokens", request.maxTokens());
-                return enviar(request, body);
+            if (!ex.getResponseBodyAsString().contains("max_completion_tokens")) {
+                throw erro(ex);
             }
-            throw erro(ex);
+            body.remove("max_tokens");
+            body.put("max_completion_tokens", request.maxTokens());
+            try {
+                return enviar(request, body);
+            } catch (RestClientResponseException retry) {
+                // Sem este catch, a falha da segunda tentativa subiria crua e viraria um 500.
+                throw erro(retry);
+            }
         }
     }
 
     private JsonNode enviar(AiRequest request, Map<String, Object> body) {
         try {
-            JsonNode response = http.post()
+            // O corpo vem como texto e e convertido aqui: alguns servicos (o Gemini, por
+            // exemplo) respondem com Content-Type generico, e um conversor por tipo recusaria.
+            byte[] bruto = http.post()
                     .uri(baseUrl(request) + "/chat/completions")
                     .header("Authorization", "Bearer " + request.apiKey())
                     .header("Content-Type", "application/json")
+                    .header("Accept", "application/json")
                     .body(body)
                     .retrieve()
-                    .body(JsonNode.class);
+                    .body(byte[].class);
 
+            // byte[] e lido com qualquer Content-Type; o Gemini as vezes responde octet-stream.
+            String corpo = bruto == null ? "" : new String(bruto, StandardCharsets.UTF_8);
+            JsonNode response = corpo.isBlank() ? null : mapper.readTree(corpo);
             if (response == null || !response.has("choices")) {
                 throw new AiUnavailableException("O serviço de IA respondeu sem conteúdo.");
             }
             return response;
+        } catch (com.fasterxml.jackson.core.JsonProcessingException ex) {
+            log.warn("Resposta ilegivel do servico de IA em {}", baseUrl(request), ex);
+            throw new AiUnavailableException("O serviço de IA respondeu em um formato inesperado.", ex);
         } catch (RestClientResponseException ex) {
             throw ex;
         } catch (AiUnavailableException ex) {
@@ -148,6 +163,12 @@ public class OpenAiCompatibleProvider implements AiProvider {
         }
         if (ex.getStatusCode().value() == 429) {
             return new AiUnavailableException("Limite de uso do serviço de IA atingido. Tente de novo em instantes.", ex);
+        }
+        if (ex.getStatusCode().is5xxServerError()) {
+            // Tipico da camada gratuita em hora cheia: o problema e do lado deles, nao da config.
+            return new AiUnavailableException(
+                    "O modelo está sobrecarregado no momento. Tente de novo em alguns instantes, "
+                            + "ou troque de serviço na aba da sua conta.", ex);
         }
         return new AiUnavailableException("O serviço de IA recusou a requisição: " + mensagem(detalhe), ex);
     }

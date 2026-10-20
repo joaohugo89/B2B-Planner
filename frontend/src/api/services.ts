@@ -59,22 +59,28 @@ export interface PostDraft {
   ctaLabel: string;
 }
 
+/**
+ * Gerar texto leva muito mais que uma consulta comum: modelos gratuitos como o Gemini
+ * costumam passar de dois minutos. O limite geral de 15s vale para o resto da API.
+ */
+const ESPERA_IA = 300_000;
+
 export const aiApi = {
   async status() {
     const { data } = await api.get<{ enabled: boolean; model: string }>('/ai/status');
     return data;
   },
   async chat(messages: ChatMessage[]) {
-    const { data } = await api.post<{ reply: string }>('/ai/chat', { messages });
+    const { data } = await api.post<{ reply: string }>('/ai/chat', { messages }, { timeout: ESPERA_IA });
     return data.reply;
   },
   /** `cached` marca o rascunho que veio do cache em memória, sem nova chamada à API. */
   async draft(brief: string, audience?: string, format?: string) {
-    const { data } = await api.post<{ draft: PostDraft; cached: boolean }>('/ai/draft', {
-      brief,
-      audience,
-      format,
-    });
+    const { data } = await api.post<{ draft: PostDraft; cached: boolean }>(
+      '/ai/draft',
+      { brief, audience, format },
+      { timeout: ESPERA_IA },
+    );
     return data;
   },
   /** Consumo de tokens do mês e últimas chamadas; exige estar logado. */

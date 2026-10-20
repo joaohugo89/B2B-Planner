@@ -1,6 +1,8 @@
 package br.com.jhcomp.planner.settings;
 
 import br.com.jhcomp.planner.crypto.CryptoService;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -13,6 +15,8 @@ import java.util.Optional;
  */
 @Service
 public class SettingsService {
+
+    private static final Logger log = LoggerFactory.getLogger(SettingsService.class);
 
     public static final String INSTAGRAM_APP_ID = "instagram_app_id";
     public static final String INSTAGRAM_APP_SECRET = "instagram_app_secret";
@@ -59,7 +63,22 @@ public class SettingsService {
         return repository.findById(key)
                 .map(AppSetting::getValue)
                 .filter(value -> !value.isBlank())
-                .map(value -> isSensitive(key) ? crypto.decrypt(value) : value);
+                .flatMap(value -> isSensitive(key) ? decifrar(key, value) : Optional.of(value));
+    }
+
+    /**
+     * Um segredo que não abre — chave de criptografia trocada, ou banco restaurado de outra
+     * instalação — vale como "não configurado". Derrubar a aplicação inteira por causa disso
+     * deixaria o painel inacessível justamente para quem precisa redigitar a chave.
+     */
+    private Optional<String> decifrar(String key, String value) {
+        try {
+            return Optional.of(crypto.decrypt(value));
+        } catch (RuntimeException ex) {
+            log.warn("O segredo '{}' não pôde ser decifrado com a chave atual e será tratado como "
+                    + "não configurado. Informe-o de novo na aba da sua conta.", key);
+            return Optional.empty();
+        }
     }
 
     /** Grava o valor; string vazia apaga o override e volta a valer o ambiente. */

@@ -204,8 +204,16 @@ const AI_PRESETS = [
     label: 'Groq — camada gratuita',
     provider: 'openai',
     baseUrl: 'https://api.groq.com/openai/v1',
-    model: 'llama-3.3-70b-versatile',
+    model: 'openai/gpt-oss-120b',
     hint: 'Gratuito dentro de um limite diário e sem cartão. Chave em console.groq.com.',
+  },
+  {
+    id: 'gemini',
+    label: 'Google Gemini — camada gratuita',
+    provider: 'openai',
+    baseUrl: 'https://generativelanguage.googleapis.com/v1beta/openai',
+    model: 'gemini-3.8-flash',
+    hint: 'Gratuito dentro de um limite diário. Chave em aistudio.google.com/apikey.',
   },
   {
     id: 'openrouter',
