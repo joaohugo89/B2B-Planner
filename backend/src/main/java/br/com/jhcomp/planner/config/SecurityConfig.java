@@ -59,12 +59,14 @@ public class SecurityConfig {
                 .authorizeHttpRequests(auth -> auth
                         .requestMatchers("/api/auth/**").permitAll()
                         .requestMatchers("/actuator/health", "/v3/api-docs/**", "/swagger-ui/**", "/swagger-ui.html").permitAll()
-                        // Chaves de integração só para quem está logado, mesmo na leitura.
-                        .requestMatchers("/api/settings/integrations").authenticated()
-                        // Consumo e custo da IA só para quem está logado.
-                        .requestMatchers("/api/ai/usage").authenticated()
-                        // Leitura do planner é pública; qualquer escrita exige token de acesso.
-                        .requestMatchers(HttpMethod.GET, "/api/**").permitAll()
+                        // A única tela aberta é o Feed Grid: os posts já finalizados (o
+                        // PostController esconde os rascunhos de quem não está logado) e os
+                        // arquivos das artes, que as imagens do feed precisam carregar.
+                        .requestMatchers(HttpMethod.GET, "/api/posts", "/api/posts/metrics",
+                                "/api/posts/*", "/api/posts/code/*").permitAll()
+                        .requestMatchers(HttpMethod.GET, "/api/assets/files/**").permitAll()
+                        // Todo o resto é a bancada de trabalho — legendas, tons, catálogo de
+                        // templates, chaves, IA e Instagram — e exige conta mesmo na leitura.
                         .anyRequest().authenticated())
                 // Sem o entry point explícito, uma escrita sem token responderia 403 em vez de 401.
                 .exceptionHandling(ex -> ex

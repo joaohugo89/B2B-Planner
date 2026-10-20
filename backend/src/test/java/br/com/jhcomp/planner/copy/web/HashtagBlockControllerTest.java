@@ -76,12 +76,16 @@ class HashtagBlockControllerTest {
     }
 
     @Test
-    @DisplayName("GET /api/hashtag-blocks e publico e conta as hashtags do bloco")
-    void listIsPublic() throws Exception {
+    @DisplayName("GET /api/hashtag-blocks exige conta e conta as hashtags do bloco")
+    void listRequiresToken() throws Exception {
         when(blocks.findAllByOrderByNameAsc())
                 .thenReturn(List.of(block(1L, "Manutencao", "#ManutencaoPC #SSD")));
 
+        // Sem conta, o Guia de Copy nao existe: nem a tela nem os dados dela.
         mockMvc.perform(get("/api/hashtag-blocks"))
+                .andExpect(status().isUnauthorized());
+
+        mockMvc.perform(get("/api/hashtag-blocks").header("Authorization", bearer()))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$[0].name").value("Manutencao"))
                 .andExpect(jsonPath("$[0].hashtags").value("#ManutencaoPC #SSD"))

@@ -91,14 +91,17 @@ class InstagramControllerTest {
     }
 
     @Test
-    @DisplayName("GET do status e publico e devolve o erro da ultima tentativa")
-    void statusIsPublicAndCarriesError() throws Exception {
+    @DisplayName("GET do status exige conta e devolve o erro da ultima tentativa")
+    void statusRequiresTokenAndCarriesError() throws Exception {
         when(publishing.status(10L)).thenReturn(new InstagramPublishService.PublishStatus(
                 10L, "07", "ERRO", false, false,
                 "Conecte uma conta do Instagram antes de publicar.", null, null,
                 Instant.parse("2026-10-19T12:00:00Z"), PostStatus.PRONTO_PARA_POSTAR));
 
         mockMvc.perform(get("/api/instagram/publish/10/status"))
+                .andExpect(status().isUnauthorized());
+
+        mockMvc.perform(get("/api/instagram/publish/10/status").header("Authorization", bearer()))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.state").value("ERRO"))
                 .andExpect(jsonPath("$.publishing").value(false))

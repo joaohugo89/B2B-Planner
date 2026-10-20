@@ -30,6 +30,7 @@ import java.util.Optional;
 
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoInteractions;
 import static org.mockito.Mockito.when;
@@ -90,7 +91,7 @@ class PostControllerTest {
     @Test
     @DisplayName("GET /api/posts e publico e serializa a lista")
     void listIsPublic() throws Exception {
-        when(service.list(null, null)).thenReturn(List.of(
+        when(service.list(null, null, true)).thenReturn(List.of(
                 post(1L, "01", "JH.Comp — Tecnologia para pessoas e empresas", PostStatus.PRONTO_PARA_POSTAR),
                 post(2L, "02", "Seu computador pode estar muito mais rápido", PostStatus.AGENDADO)));
 
@@ -106,12 +107,12 @@ class PostControllerTest {
     @Test
     @DisplayName("GET /api/posts repassa os filtros de status e audience")
     void listForwardsFilters() throws Exception {
-        when(service.list(PostStatus.AGENDADO, null)).thenReturn(List.of());
+        when(service.list(PostStatus.AGENDADO, null, true)).thenReturn(List.of());
 
         mockMvc.perform(get("/api/posts").param("status", "AGENDADO"))
                 .andExpect(status().isOk());
 
-        verify(service).list(PostStatus.AGENDADO, null);
+        verify(service).list(PostStatus.AGENDADO, null, true);
     }
 
     @Test
@@ -125,7 +126,7 @@ class PostControllerTest {
     @Test
     @DisplayName("GET /api/posts/metrics devolve o resumo do planner")
     void metricsAreExposed() throws Exception {
-        when(service.metrics()).thenReturn(new PlannerMetrics(6, 3, 3, 0, 2, 2, 5, 1, 15500, 2380));
+        when(service.metrics(true)).thenReturn(new PlannerMetrics(6, 3, 3, 0, 2, 2, 5, 1, 15500, 2380));
 
         mockMvc.perform(get("/api/posts/metrics"))
                 .andExpect(status().isOk())
@@ -137,7 +138,7 @@ class PostControllerTest {
     @Test
     @DisplayName("GET /api/posts/code/{code} devolve o post do batch")
     void getByCode() throws Exception {
-        when(service.getByCode("01"))
+        when(service.getFinalizadoByCode("01"))
                 .thenReturn(post(1L, "01", "JH.Comp — Tecnologia", PostStatus.PRONTO_PARA_POSTAR));
 
         mockMvc.perform(get("/api/posts/code/01"))
@@ -149,7 +150,7 @@ class PostControllerTest {
     @Test
     @DisplayName("GET de codigo inexistente responde 404 com corpo ApiError")
     void getByCodeNotFound() throws Exception {
-        when(service.getByCode("99")).thenThrow(new NotFoundException("Post", "99"));
+        when(service.getFinalizadoByCode("99")).thenThrow(new NotFoundException("Post", "99"));
 
         mockMvc.perform(get("/api/posts/code/99"))
                 .andExpect(status().isNotFound())
@@ -227,5 +228,40 @@ class PostControllerTest {
                 .andExpect(status().isUnauthorized());
 
         verifyNoInteractions(service);
+    }
+
+    @Test
+    @DisplayName("com Bearer valido, a lista vem completa: rascunhos inclusive")
+    void listWithTokenIncludesDrafts() throws Exception {
+        when(service.list(null, null, false)).thenReturn(List.of(
+                post(1L, "01", "Rascunho em andamento", PostStatus.RASCUNHO),
+                post(2L, "02", "Pronto para publicar", PostStatus.PRONTO_PARA_POSTAR)));
+
+        mockMvc.perform(get("/api/posts").header("Authorization", bearer()))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.length()").value(2));
+
+        verify(service).list(null, null, false);
+    }
+
+    @Test
+    @DisplayName("sem login, pedir um rascunho pelo id responde 404")
+    void draftIsInvisibleToVisitor() throws Exception {
+        when(service.getFinalizadoById(7L)).thenThrow(new NotFoundException("Post", 7L));
+
+        mockMvc.perform(get("/api/posts/7"))
+                .andExpect(status().isNotFound());
+
+        verify(service, never()).getById(7L);
+    }
+
+    @Test
+    @DisplayName("com Bearer valido, o mesmo rascunho abre normalmente")
+    void draftIsVisibleWithToken() throws Exception {
+        when(service.getById(7L)).thenReturn(post(7L, "07", "Rascunho em andamento", PostStatus.RASCUNHO));
+
+        mockMvc.perform(get("/api/posts/7").header("Authorization", bearer()))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.status").value("RASCUNHO"));
     }
 }

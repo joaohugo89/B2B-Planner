@@ -23,8 +23,25 @@ public class PostService {
         this.repository = repository;
     }
 
+    /** Lista completa, para quem está logado. */
     @Transactional(readOnly = true)
     public List<Post> list(PostStatus status, Audience audience) {
+        return list(status, audience, false);
+    }
+
+    /**
+     * @param somenteFinalizados deixa de fora os rascunhos; é o que um visitante enxerga.
+     */
+    @Transactional(readOnly = true)
+    public List<Post> list(PostStatus status, Audience audience, boolean somenteFinalizados) {
+        List<Post> posts = buscar(status, audience);
+        if (!somenteFinalizados) {
+            return posts;
+        }
+        return posts.stream().filter(post -> post.getStatus().isFinalizado()).toList();
+    }
+
+    private List<Post> buscar(PostStatus status, Audience audience) {
         if (status != null) {
             return repository.findByStatusOrderByCodeAsc(status);
         }
@@ -42,6 +59,24 @@ public class PostService {
     @Transactional(readOnly = true)
     public Post getByCode(String code) {
         return repository.findByCode(code).orElseThrow(() -> new NotFoundException("Post", code));
+    }
+
+    /**
+     * Um rascunho pedido por quem não está logado responde como inexistente, em vez de 403:
+     * saber que o post existe já entregaria parte do planejamento.
+     */
+    @Transactional(readOnly = true)
+    public Post getFinalizadoById(Long id) {
+        return repository.findById(id)
+                .filter(post -> post.getStatus().isFinalizado())
+                .orElseThrow(() -> new NotFoundException("Post", id));
+    }
+
+    @Transactional(readOnly = true)
+    public Post getFinalizadoByCode(String code) {
+        return repository.findByCode(code)
+                .filter(post -> post.getStatus().isFinalizado())
+                .orElseThrow(() -> new NotFoundException("Post", code));
     }
 
     public Post create(PostRequest request) {
@@ -80,7 +115,13 @@ public class PostService {
 
     @Transactional(readOnly = true)
     public PlannerMetrics metrics() {
-        List<Post> all = repository.findAllByOrderByCodeAsc();
+        return metrics(false);
+    }
+
+    /** Com somenteFinalizados, os números batem com a lista que o visitante vê. */
+    @Transactional(readOnly = true)
+    public PlannerMetrics metrics(boolean somenteFinalizados) {
+        List<Post> all = list(null, null, somenteFinalizados);
         long reach = all.stream().filter(p -> p.getEstimatedReach() != null).mapToLong(Post::getEstimatedReach).sum();
         long saves = all.stream().filter(p -> p.getEstimatedSaves() != null).mapToLong(Post::getEstimatedSaves).sum();
 

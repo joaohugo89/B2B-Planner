@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { Copy, Layers, Image as ImageIcon, CalendarDays, Instagram } from 'lucide-react';
 import { postsApi } from '../api/services';
 import { useApi } from '../api/useApi';
+import { useAuth } from '../auth/AuthContext';
 import { EmptyState, ErrorState, LoadingState, MetricCard, PageHeader, StatusTag } from '../components/primitives';
 import { InstagramPreview } from '../components/InstagramPreview';
 import type { Audience, Post } from '../types/api';
@@ -110,9 +111,12 @@ function PostCard({ post, ratio }: { post: Post; ratio: '4/5' | '1/1' }) {
 }
 
 export function FeedGridPage() {
+  const { session } = useAuth();
   const [ratio, setRatio] = useState<'4/5' | '1/1'>('4/5');
-  const posts = useApi(() => postsApi.list(), []);
-  const metrics = useApi(() => postsApi.metrics(), []);
+  // Entrar ou sair muda o que a API devolve, então as duas chamadas refazem junto.
+  const logado = Boolean(session);
+  const posts = useApi(() => postsApi.list(), [logado]);
+  const metrics = useApi(() => postsApi.metrics(), [logado]);
 
   return (
     <>
@@ -169,7 +173,22 @@ export function FeedGridPage() {
 
         {posts.loading && !posts.data && <LoadingState />}
         {posts.error && <ErrorState message={posts.error} onRetry={posts.reload} />}
-        {posts.data?.length === 0 && <EmptyState message="Nenhum post cadastrado neste ciclo." />}
+        {posts.data?.length === 0 && (
+          <EmptyState
+            message={
+              session
+                ? 'Nenhum post cadastrado neste ciclo.'
+                : 'Nenhum post pronto para publicar neste ciclo. Entre com sua conta para ver os rascunhos.'
+            }
+          />
+        )}
+
+        {/* Sem conta, a API devolve só o que já saiu da bancada; vale dizer isso. */}
+        {!session && posts.data && posts.data.length > 0 && (
+          <p className="label-code text-content-muted">
+            Mostrando apenas os posts prontos para publicar. Entre com sua conta para ver os rascunhos.
+          </p>
+        )}
 
         {posts.data && posts.data.length > 0 && (
           <div className="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-3">

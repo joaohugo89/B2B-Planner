@@ -16,7 +16,8 @@ const AUDIENCE_LABEL: Record<Audience, string> = {
 };
 
 export function PostDetailPage() {
-  const posts = useApi(() => postsApi.list(), []);
+  const { session } = useAuth();
+  const posts = useApi(() => postsApi.list(), [Boolean(session)]);
   const [selected, setSelected] = useState<string | null>(null);
 
   const current = posts.data?.find((p) => p.code === selected) ?? posts.data?.[0] ?? null;
@@ -78,13 +79,14 @@ const STATUS_FLOW: { value: PostStatus; label: string; hint: string }[] = [
 ];
 
 function PostInspector({ code, onDeleted }: { code: string; onDeleted: () => void }) {
-  const { data: post, loading, error, reload } = useApi(() => postsApi.byCode(code), [code]);
+  const { session } = useAuth();
+  // Um rascunho só existe para quem está logado: entrar ou sair refaz a busca.
+  const { data: post, loading, error, reload } = useApi(() => postsApi.byCode(code), [code, Boolean(session)]);
   const [copied, setCopied] = useState(false);
   const [statusBusy, setStatusBusy] = useState(false);
   const [statusError, setStatusError] = useState<string | null>(null);
   const [confirmingDelete, setConfirmingDelete] = useState(false);
   const [deleting, setDeleting] = useState(false);
-  const { session } = useAuth();
 
   /** Remove o post do planner; a arte continua no catálogo de assets. */
   async function deletePost() {

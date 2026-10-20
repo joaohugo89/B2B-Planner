@@ -13,6 +13,9 @@ import jakarta.validation.Valid;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.DeleteMapping;
+import org.springframework.security.authentication.AnonymousAuthenticationToken;
+import org.springframework.security.core.Authentication;
+import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PatchMapping;
 import org.springframework.web.bind.annotation.PathVariable;
@@ -39,22 +42,31 @@ public class PostController {
     @GetMapping
     public List<PostResponse> list(@RequestParam(required = false) PostStatus status,
                                    @RequestParam(required = false) Audience audience) {
-        return service.list(status, audience).stream().map(PostResponse::from).toList();
+        return service.list(status, audience, apenasFinalizados()).stream().map(PostResponse::from).toList();
     }
 
     @GetMapping("/metrics")
     public PlannerMetrics metrics() {
-        return service.metrics();
+        return service.metrics(apenasFinalizados());
     }
 
     @GetMapping("/{id}")
     public PostResponse getById(@PathVariable Long id) {
-        return PostResponse.from(service.getById(id));
+        return PostResponse.from(apenasFinalizados() ? service.getFinalizadoById(id) : service.getById(id));
     }
 
     @GetMapping("/code/{code}")
     public PostResponse getByCode(@PathVariable String code) {
-        return PostResponse.from(service.getByCode(code));
+        return PostResponse.from(apenasFinalizados() ? service.getFinalizadoByCode(code) : service.getByCode(code));
+    }
+
+    /**
+     * Sem conta, o planner mostra só o que já está pronto para publicar: rascunho é trabalho
+     * em andamento e não interessa a quem só abriu o endereço.
+     */
+    private boolean apenasFinalizados() {
+        Authentication auth = SecurityContextHolder.getContext().getAuthentication();
+        return auth == null || !auth.isAuthenticated() || auth instanceof AnonymousAuthenticationToken;
     }
 
     @PostMapping
