@@ -4,9 +4,13 @@ Aplicação full-stack para o planner de conteúdo da JH.COMP: Feed Grid do Inst
 detalhados, guia de copy e central de assets/templates. Identidade visual dark industrial
 (carvão/grafite com acentos em vermelho).
 
+> **Direitos.** Código aberto para leitura e avaliação técnica. Todos os direitos reservados:
+> publicar o repositório não concede licença de uso, cópia, modificação ou distribuição.
+> Uso comercial mediante contato.
+
 ```
 .
-├── backend/    Java 25 + Spring Boot 3.3 (Web, Data JPA, Security/JWT, Flyway, PostgreSQL)
+├── backend/    Java 21 + Spring Boot 3.5 (Web, Data JPA, Security/JWT, Flyway, PostgreSQL)
 ├── frontend/   React 18 + TypeScript + Vite + Tailwind + Lucide + React Router
 ├── docker-compose.yml        PostgreSQL 18 avulso (modo desenvolvimento)
 ├── docker-compose.local.yml  Portas desta máquina, usado junto com o de produção
@@ -679,5 +683,6 @@ imprimindo os comandos de build — em vez de estourar um erro de comando não e
 - Stack completa validada nesta máquina: migrations aplicadas e o fluxo ponta a ponta exercitado
   pela UI — montar a arte no editor, salvar como post, marcar "Pronto para postar" e aplicar uma
   legenda do Guia de Copy. A sessão renova o token sozinha quando o access token expira.
-- O **Assistente IA** só foi exercitado sem chave (aparece desativado); as chamadas reais à API da
-  Anthropic ainda não foram testadas.
+- O **Assistente IA** foi exercitado com chamadas reais: Groq (chat em ~0,7 s, rascunho em ~1,5 s),
+  Google Gemini e um servidor local simulando o protocolo da OpenAI. Sem chave, a tela aparece
+  desativada e a aplicação sobe normalmente.
