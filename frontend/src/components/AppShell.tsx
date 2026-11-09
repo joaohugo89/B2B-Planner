@@ -53,7 +53,7 @@ export function AppShell() {
   return (
     <div className="flex min-h-full flex-col">
       <header className="fixed inset-x-0 top-0 z-50 border-b border-surface-high bg-surface-lowest/90 backdrop-blur-xl">
-        <div className="mx-auto flex h-16 max-w-7xl items-center justify-between gap-4 px-4 md:px-8">
+        <div className="shell flex h-16 items-center justify-between gap-4">
           <div className="flex items-center gap-6">
             <div className="flex items-center gap-2">
               <div className="flex h-9 w-9 items-center justify-center rounded border border-outline-variant bg-surface-high font-display text-xl text-brand-soft">
@@ -61,7 +61,8 @@ export function AppShell() {
               </div>
               <div className="flex flex-col leading-none">
                 <span className="font-display text-base tracking-tight">JH.COMP</span>
-                <span className="label-code mt-1 text-content-muted">Tecnologia Humana &amp; B2B</span>
+                {/* No celular a assinatura quebrava em três linhas e empurrava a barra inteira. */}
+                <span className="label-code mt-1 hidden text-content-muted sm:block">Tecnologia Humana &amp; B2B</span>
               </div>
             </div>
 
@@ -141,7 +142,7 @@ export function AppShell() {
       </main>
 
       <footer className="border-t border-surface-high bg-surface-lowest py-8">
-        <div className="mx-auto flex max-w-7xl flex-col items-center justify-between gap-3 px-4 md:flex-row md:px-8">
+        <div className="shell flex flex-col items-center justify-between gap-3 md:flex-row">
           <span className="label-code text-content-muted">JH.COMP ENGINEERING SYSTEM // TECH FOR HUMANS &amp; ENTERPRISE</span>
           <span className="label-code text-brand-soft">FORMAT 1080x1350 // GRID 4:5</span>
         </div>

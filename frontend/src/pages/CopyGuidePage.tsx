@@ -115,7 +115,7 @@ export function CopyGuidePage() {
         }
       />
 
-      <div className="mx-auto flex max-w-7xl flex-col gap-6 px-4 py-10 md:px-8">
+      <div className="shell flex flex-col gap-6 py-10">
         <section className="panel grid grid-cols-1 gap-4 p-4 md:grid-cols-3">
           <Step n="1" title="Escreva a legenda">
             Texto completo em português, com quebras de linha, CTA e hashtags separadas.
@@ -318,7 +318,7 @@ function CopyCard({
       <p className="whitespace-pre-line rounded bg-surface-lowest p-4 text-sm leading-relaxed">{entry.body}</p>
 
       {allTags && (
-        <p className="rounded bg-surface-high p-3 font-mono text-[12px] text-content-variant">{allTags}</p>
+        <p className="rounded bg-surface-high p-3 font-mono text-sm text-content-variant">{allTags}</p>
       )}
 
       <div className="flex flex-wrap items-center justify-between gap-3">
@@ -333,7 +333,7 @@ function CopyCard({
                 void applyTo(event.target.value);
                 event.target.value = '';
               }}
-              className="rounded bg-surface-lowest px-3 py-2 font-mono text-[11px]"
+              className="rounded bg-surface-lowest px-3 py-2 font-mono text-xs"
             >
               <option value="">{applying ? 'Aplicando…' : 'Usar no post…'}</option>
               {posts.map((post) => (
@@ -576,7 +576,7 @@ function LegendasDosPosts({ posts, onAlterado }: { posts: Post[]; onAlterado: ()
         </button>
       </header>
 
-      <p className="text-xs text-content-muted">
+      <p className="text-sm text-content-muted">
         Estas legendas vivem dentro do post, inclusive os que já têm arte montada. Editar aqui muda
         o que vai ser publicado.
       </p>
@@ -614,11 +614,11 @@ function LegendasDosPosts({ posts, onAlterado }: { posts: Post[]; onAlterado: ()
                 />
               ) : (
                 <>
-                  <p className="max-h-32 overflow-y-auto whitespace-pre-line rounded bg-surface p-2 text-xs leading-relaxed">
+                  <p className="max-h-32 overflow-y-auto whitespace-pre-line rounded bg-surface p-2 text-sm leading-relaxed">
                     {post.caption}
                   </p>
                   {post.hashtags && (
-                    <p className="font-mono text-[11px] text-brand-soft">{post.hashtags}</p>
+                    <p className="font-mono text-sm text-brand-soft">{post.hashtags}</p>
                   )}
                 </>
               )}
@@ -628,7 +628,7 @@ function LegendasDosPosts({ posts, onAlterado }: { posts: Post[]; onAlterado: ()
       )}
 
       {!session && (
-        <p className="text-xs text-content-muted">Entre com sua conta para editar as legendas.</p>
+        <p className="text-sm text-content-muted">Entre com sua conta para editar as legendas.</p>
       )}
     </section>
   );

@@ -39,7 +39,7 @@ export function CarrosselPost({ post }: { post: Post }) {
 
   return (
     <div className="flex flex-col gap-3">
-      <div className="relative mx-auto w-full max-w-[500px]">
+      <div className="relative mx-auto w-full max-w-[32rem] 2xl:max-w-[40rem]">
         <img
           src={assetUrl(imagem)}
           alt={`Arte ${indice + 1} de ${imagens.length} do post ${post.code}`}
@@ -59,7 +59,7 @@ export function CarrosselPost({ post }: { post: Post }) {
       </div>
 
       {varios && (
-        <div className="mx-auto flex max-w-[500px] flex-wrap justify-center gap-2">
+        <div className="mx-auto flex max-w-[32rem] flex-wrap 2xl:max-w-[40rem] justify-center gap-2">
           {imagens.map((slide, i) => (
             <button
               key={`${slide}-${i}`}

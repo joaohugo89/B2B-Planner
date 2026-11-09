@@ -32,7 +32,7 @@ export function PostDetailPage() {
         description="Visualizador dos posts em formato portrait 1080×1350, com metadados táticos e copy estratégica."
       />
 
-      <div className="mx-auto flex max-w-7xl flex-col gap-6 px-4 py-10 md:px-8">
+      <div className="shell flex flex-col gap-6 py-10">
         {posts.loading && <LoadingState />}
         {posts.error && <ErrorState message={posts.error} onRetry={posts.reload} />}
         {posts.data?.length === 0 && <EmptyState message="Nenhum post para inspecionar." />}
@@ -144,7 +144,7 @@ function PostInspector({
           <CarrosselPost post={post} />
         ) : (
         <div
-          className="relative mx-auto flex w-full max-w-[500px] flex-col justify-between overflow-hidden rounded-xl border border-outline-variant/30 bg-surface-lowest p-8"
+          className="relative mx-auto flex w-full max-w-[32rem] flex-col 2xl:max-w-[40rem] justify-between overflow-hidden rounded-xl border border-outline-variant/30 bg-surface-lowest p-8"
           style={{ aspectRatio: '4/5' }}
         >
           <div className="relative flex items-center justify-between">
@@ -156,14 +156,14 @@ function PostInspector({
             <div className="h-0.5 w-16 bg-gradient-to-r from-brand to-transparent" />
             <p className="text-sm text-content-muted">{post.summary}</p>
           </div>
-          <div className="relative rounded bg-brand px-4 py-3 text-center font-mono text-[12px] uppercase tracking-wider text-brand-ink">
+          <div className="relative rounded bg-brand px-4 py-3 text-center font-mono text-xs uppercase tracking-wider text-brand-ink">
             {post.ctaLabel ?? 'Falar no WhatsApp'}
           </div>
         </div>
         )}
 
         {!post.coverImageUrl && (
-          <p className="mx-auto max-w-[500px] text-center text-xs text-content-muted">
+          <p className="mx-auto max-w-[32rem] text-center text-sm 2xl:max-w-[40rem] text-content-muted">
             Este post ainda não tem arte. Monte uma no <Link to="/studio" className="text-brand-soft underline">Editor de Posts</Link> e
             clique em “Salvar no planner”.
           </p>
@@ -256,7 +256,7 @@ function PostInspector({
               {copied ? 'Copiado!' : 'Copiar'}
             </button>
           </div>
-          <p className="whitespace-pre-line text-xs text-content-muted">
+          <p className="whitespace-pre-line text-sm text-content-muted">
             {caption || 'Legenda ainda não cadastrada para este post.'}
           </p>
         </div>
@@ -352,7 +352,7 @@ function PublishControl({ post, onPublished }: { post: Post; onPublished: () => 
       )}
 
       {!publishing && publishError && (
-        <p className="rounded bg-surface-high p-3 text-xs text-brand-soft">
+        <p className="rounded bg-surface-high p-3 text-sm text-brand-soft">
           A última tentativa falhou: {publishError}
         </p>
       )}

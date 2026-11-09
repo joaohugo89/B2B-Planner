@@ -37,6 +37,24 @@ export default {
           variant: token('content-variant'),
         },
       },
+      // A escala sobe um degrau em relação ao padrão do Tailwind: o planner é feito de
+      // etiquetas e metadados, e com 12px de corpo a tela virava um formulário de leitura
+      // difícil. Em rem, para acompanhar o tamanho de fonte da raiz (ver index.css).
+      fontSize: {
+        xs: ['0.8125rem', { lineHeight: '1.15rem' }],
+        sm: ['0.9375rem', { lineHeight: '1.45rem' }],
+        base: ['1.0625rem', { lineHeight: '1.7rem' }],
+        lg: ['1.1875rem', { lineHeight: '1.8rem' }],
+        xl: ['1.375rem', { lineHeight: '1.9rem' }],
+        '2xl': ['1.625rem', { lineHeight: '2.1rem' }],
+        '3xl': ['2.0625rem', { lineHeight: '2.4rem' }],
+        '4xl': ['2.5rem', { lineHeight: '2.8rem' }],
+        '5xl': ['3.25rem', { lineHeight: '1.05' }],
+      },
+      maxWidth: {
+        // Em rem de propósito: num monitor grande a raiz cresce e o conteúdo cresce com ela.
+        shell: '110rem',
+      },
       fontFamily: {
         display: ['Syne', 'system-ui', 'sans-serif'],
         body: ['"Plus Jakarta Sans"', 'system-ui', 'sans-serif'],

@@ -49,6 +49,27 @@
     color-scheme: light;
   }
 
+  /*
+   * O texto acompanha o monitor. Tudo no projeto está em rem, então subir a raiz sobe
+   * texto e respiro juntos: num monitor grande a tela não fica com letra de notebook
+   * perdida no meio de um oceano de fundo.
+   */
+  html {
+    font-size: 100%;
+  }
+
+  @media (min-width: 1536px) {
+    html {
+      font-size: 106.25%; /* ~17px */
+    }
+  }
+
+  @media (min-width: 1920px) {
+    html {
+      font-size: 112.5%; /* ~18px */
+    }
+  }
+
   html,
   body,
   #root {
@@ -67,20 +88,31 @@
 }
 
 @layer components {
+  /*
+   * A faixa de conteúdo de toda tela.
+   *
+   * Antes era "max-w-7xl" repetido em dez lugares: 1280px fixos, o mesmo num notebook
+   * de 13" e num monitor de 27", onde sobrava meia tela de fundo vazio. Agora o teto
+   * está em rem e cresce com a raiz, e o recuo lateral abre em telas largas.
+   */
+  .shell {
+    @apply mx-auto w-full max-w-shell px-4 md:px-8 2xl:px-12;
+  }
+
   .panel {
     @apply rounded-xl border border-surface-high bg-surface-low;
   }
 
   .label-code {
-    @apply font-mono text-[11px] uppercase tracking-[0.08em];
+    @apply font-mono text-xs uppercase tracking-[0.08em];
   }
 
   .btn-primary {
-    @apply inline-flex items-center gap-2 rounded bg-brand px-4 py-2 font-mono text-[12px] uppercase tracking-wider text-brand-ink transition hover:brightness-110 disabled:opacity-50;
+    @apply inline-flex items-center gap-2 rounded bg-brand px-4 py-2 font-mono text-xs uppercase tracking-wider text-brand-ink transition hover:brightness-110 disabled:opacity-50;
   }
 
   .btn-ghost {
-    @apply inline-flex items-center gap-2 rounded bg-surface-high px-3 py-1.5 font-mono text-[11px] uppercase tracking-wider text-content transition hover:bg-surface-highest;
+    @apply inline-flex items-center gap-2 rounded bg-surface-high px-3 py-1.5 font-mono text-xs uppercase tracking-wider text-content transition hover:bg-surface-highest;
   }
 }
 

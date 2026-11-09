@@ -159,7 +159,7 @@ function UsagePanel({ usage }: { usage: AiUsage }) {
       {usage.recent.length > 0 ? (
         <ul className="flex flex-col gap-1">
           {usage.recent.slice(0, 5).map((entry, index) => (
-            <li key={`${entry.at}-${index}`} className="flex justify-between font-mono text-[11px] text-content-muted">
+            <li key={`${entry.at}-${index}`} className="flex justify-between font-mono text-xs text-content-muted">
               <span>
                 {new Date(entry.at).toLocaleString('pt-BR', { dateStyle: 'short', timeStyle: 'short' })} • {entry.operation}
               </span>
@@ -326,7 +326,7 @@ function IntegrationForm({
   return (
     <section className="panel flex flex-col gap-4 p-4">
       <span className="label-code text-brand-soft">Chaves das integrações</span>
-      <p className="text-xs text-content-muted">
+      <p className="text-sm text-content-muted">
         Guardadas no banco do planner e usadas na hora. Deixar em branco faz valer a variável de ambiente do backend.
       </p>
 
@@ -372,7 +372,7 @@ function IntegrationForm({
               <option key={preset.id} value={preset.id}>{preset.label}</option>
             ))}
           </select>
-          <span className="text-[11px] text-content-muted">
+          <span className="text-xs text-content-muted">
             {AI_PRESETS.find((item) => item.id === aiPresetAtual(aiProvider, aiBaseUrl))?.hint}
           </span>
         </label>
@@ -421,7 +421,7 @@ function IntegrationForm({
             onChange={(event) => setAiBrandInstructions(event.target.value)}
             className="rounded bg-surface-lowest px-3 py-2 font-mono text-xs outline-none disabled:opacity-60"
           />
-          <span className="text-[11px] text-content-muted">
+          <span className="text-xs text-content-muted">
             Entram no prompt do sistema, depois do contexto da marca.
           </span>
         </label>
@@ -463,7 +463,7 @@ function Field({
         onChange={(event) => onChange(event.target.value)}
         className="rounded bg-surface-lowest px-3 py-2 font-mono text-xs outline-none disabled:opacity-60"
       />
-      {hint && <span className="text-[11px] text-content-muted">{hint}</span>}
+      {hint && <span className="text-xs text-content-muted">{hint}</span>}
     </label>
   );
 }

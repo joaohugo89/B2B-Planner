@@ -167,7 +167,7 @@ export function FeedGridPage() {
         }
       />
 
-      <div className="mx-auto flex max-w-7xl flex-col gap-8 px-4 py-10 md:px-8">
+      <div className="shell flex flex-col gap-8 py-10">
         {metrics && (
           <div className="grid grid-cols-2 gap-4 md:grid-cols-4">
             <MetricCard
@@ -216,7 +216,7 @@ export function FeedGridPage() {
         )}
 
         {posts.data && posts.data.length > 0 && (
-          <div className="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-3">
+          <div className="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-3 2xl:grid-cols-4">
             {posts.data.map((post) => (
               <PostCard key={post.id} post={post} ratio={ratio} />
             ))}

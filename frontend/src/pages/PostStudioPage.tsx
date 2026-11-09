@@ -506,7 +506,7 @@ export function PostStudioPage() {
         }
       />
 
-      <div className="mx-auto max-w-7xl px-4 pt-6 md:px-8">
+      <div className="shell pt-6">
         <div className="flex items-center gap-1 rounded-lg bg-surface-low p-1">
           {([
             { id: 'EDITOR' as const, label: 'Editor' },
@@ -539,7 +539,7 @@ export function PostStudioPage() {
           />
         </div>
       ) : (
-      <div className="mx-auto grid max-w-7xl grid-cols-1 gap-8 px-4 py-10 lg:grid-cols-12 md:px-8">
+      <div className="shell grid grid-cols-1 gap-8 py-10 lg:grid-cols-12">
         {/* Painel de edição */}
         <div className="flex flex-col gap-4 lg:col-span-5">
           <section className="panel flex flex-col gap-3 p-4">
@@ -588,7 +588,7 @@ export function PostStudioPage() {
               </button>
             </div>
 
-            <p className="text-xs text-content-muted">
+            <p className="text-sm text-content-muted">
               Cada slide tem template, layout e textos próprios; a proporção vale para o carrossel inteiro.
             </p>
           </section>
@@ -658,7 +658,7 @@ export function PostStudioPage() {
                 <select
                   defaultValue=""
                   onChange={(event) => loadFromPost(event.target.value)}
-                  className="rounded bg-surface-lowest px-2 py-1 font-mono text-[11px]"
+                  className="rounded bg-surface-lowest px-2 py-1 font-mono text-xs"
                 >
                   <option value="">Puxar de um post…</option>
                   {posts.data.map((post) => (
@@ -738,7 +738,7 @@ export function PostStudioPage() {
             <SizeControl label="Apoio e tópicos" value={spec.scale.body} onAdjust={(c) => adjustScale('body', c)} />
             <SizeControl label="Chapéu, CTA e selo" value={spec.scale.label} onAdjust={(c) => adjustScale('label', c)} />
 
-            <p className="text-xs text-content-muted">
+            <p className="text-sm text-content-muted">
               A manchete ainda encolhe sozinha se o texto não couber nas linhas do layout.
             </p>
           </section>
@@ -811,10 +811,10 @@ export function PostStudioPage() {
               <button type="button" className="btn-ghost px-2" onClick={() => nudge(20)} aria-label="Descer textos">
                 <ChevronDown size={12} />
               </button>
-              <span className="w-12 text-right font-mono text-[11px] text-content-muted">{spec.offsetY}px</span>
+              <span className="w-12 text-right font-mono text-xs text-content-muted">{spec.offsetY}px</span>
             </div>
 
-            <p className="text-xs text-content-muted">O bloco nunca passa das margens seguras, mesmo no limite do ajuste.</p>
+            <p className="text-sm text-content-muted">O bloco nunca passa das margens seguras, mesmo no limite do ajuste.</p>
           </section>
 
           {spec.layout === 'TOPICOS' && (
@@ -948,7 +948,7 @@ export function PostStudioPage() {
               onPointerMove={dragPhoto}
               onPointerUp={endDrag}
               onPointerCancel={endDrag}
-              className={`h-auto w-full max-w-[520px] touch-none rounded shadow-2xl ${
+              className={`h-auto w-full max-w-[33rem] touch-none 2xl:max-w-[42rem] rounded shadow-2xl ${
                 spec.photoUrl ? (dragging ? 'cursor-grabbing' : 'cursor-grab') : ''
               }`}
               style={{ aspectRatio: `${width}/${height}` }}
@@ -975,7 +975,7 @@ export function PostStudioPage() {
 
           {renderError && <ErrorState message={renderError} />}
 
-          <p className="text-xs text-content-muted">
+          <p className="text-sm text-content-muted">
             As margens seguem a safe zone do Instagram: 72 px nas laterais e {spec.ratio === 'RATIO_1_1' ? '96' : '150'} px
             no topo e na base, para nada ficar sob a interface do app.
           </p>
@@ -1024,7 +1024,7 @@ function SizeControl({
       <button type="button" className="btn-ghost px-2" onClick={() => onAdjust(SCALE_STEP)} aria-label={`Aumentar ${label}`}>
         <Plus size={12} />
       </button>
-      <span className="w-12 text-right font-mono text-[11px] text-content-muted">{Math.round(value * 100)}%</span>
+      <span className="w-12 text-right font-mono text-xs text-content-muted">{Math.round(value * 100)}%</span>
     </div>
   );
 }

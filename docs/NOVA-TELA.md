@@ -38,7 +38,7 @@ export function CalendarioPage() {
         actions={session && <Button variant="primary" icon={<Plus size={14} />}>Nova data</Button>}
       />
 
-      <div className="mx-auto flex max-w-7xl flex-col gap-6 px-4 py-10 md:px-8">
+      <div className="shell flex flex-col gap-6 py-10">
         {itens.loading && !itens.data && <LoadingState />}
         {itens.error && <ErrorState message={itens.error} onRetry={itens.reload} />}
         {itens.data?.length === 0 && <EmptyState message="Nada agendado ainda." />}
@@ -54,8 +54,13 @@ export function CalendarioPage() {
 }
 ```
 
-O invólucro `mx-auto flex max-w-7xl flex-col gap-6 px-4 py-10 md:px-8` é o mesmo em todas as
-telas — é o que alinha a largura do conteúdo com o cabeçalho.
+A classe `shell` é a faixa de conteúdo de todas as telas: ela centraliza, dá o recuo lateral
+e põe o teto de largura — em `rem`, para acompanhar o monitor. Nunca fixe largura em `px`;
+foi assim que as prévias de arte ficaram presas em 500px num monitor de 27".
+
+A escala de texto também é global (`tailwind.config.js` e a raiz em `index.css`): use
+`text-sm` para prosa, `text-xs` para metadados e `label-code` para etiquetas, e o tamanho
+certo sai sozinho em qualquer tela.
 
 ## Ligando a tela ao resto
 

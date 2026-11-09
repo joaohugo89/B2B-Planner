@@ -86,7 +86,7 @@ export function ToneManager({
           <Tags size={14} className="text-brand" />
           <span className="label-code text-brand-soft">Hashtags fixas de todo post</span>
         </div>
-        <p className="text-xs text-content-muted">
+        <p className="text-sm text-content-muted">
           Entram no fim de toda legenda copiada ou aplicada em um post, somadas às hashtags da própria legenda.
         </p>
         <div className="flex flex-wrap items-center gap-2">
@@ -200,7 +200,7 @@ export function ToneManager({
         </div>
 
         {error && <p className="text-sm text-brand-soft">{error}</p>}
-        {!session && <p className="text-xs text-content-muted">Entre com sua conta para editar tons e hashtags.</p>}
+        {!session && <p className="text-sm text-content-muted">Entre com sua conta para editar tons e hashtags.</p>}
       </div>
     </section>
   );
@@ -261,7 +261,7 @@ function BlockManager({ blocks, onChanged }: { blocks: HashtagBlock[]; onChanged
           </button>
         )}
       </div>
-      <p className="text-xs text-content-muted">
+      <p className="text-sm text-content-muted">
         Ao escrever uma legenda, um clique no bloco acrescenta essas hashtags no fim do campo, sem repetir as que já estão lá.
       </p>
 
@@ -296,12 +296,12 @@ function BlockManager({ blocks, onChanged }: { blocks: HashtagBlock[]; onChanged
 
       <div className="flex flex-col gap-2">
         {blocks.length === 0 && (
-          <p className="text-xs text-content-muted">Nenhum bloco cadastrado ainda.</p>
+          <p className="text-sm text-content-muted">Nenhum bloco cadastrado ainda.</p>
         )}
         {blocks.map((block) => (
           <div key={block.id} className="flex flex-wrap items-center gap-3 rounded bg-surface-lowest px-3 py-2">
             <span className="text-sm font-semibold">{block.name}</span>
-            <span className="flex-1 truncate font-mono text-[11px] text-content-muted">{block.hashtags}</span>
+            <span className="flex-1 truncate font-mono text-xs text-content-muted">{block.hashtags}</span>
             <span className="label-code text-content-muted">{block.tagCount} tag(s)</span>
 
             {session && (

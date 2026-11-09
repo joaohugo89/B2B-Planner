@@ -86,7 +86,7 @@ export function PhotoPicker({
           {busy && <Upload size={14} className="animate-pulse text-brand" />}
         </label>
       ) : (
-        <p className="text-xs text-content-muted">Entre com sua conta para enviar fotos.</p>
+        <p className="text-sm text-content-muted">Entre com sua conta para enviar fotos.</p>
       )}
 
       {photoUrl && (
@@ -151,7 +151,7 @@ export function PhotoPicker({
               onChange={(value) => onChange({ photoUrl, offsetY: value })}
             />
 
-            <p className="text-[11px] text-content-muted">
+            <p className="text-sm text-content-muted">
               Arraste a foto direto na prévia para reposicionar. Abaixo de 100% ela fica menor que a
               área, deixando respiro para o texto.
             </p>
@@ -185,7 +185,7 @@ export function PhotoPicker({
       )}
 
       {error && <p className="text-sm text-brand-soft">{error}</p>}
-      <p className="text-xs text-content-muted">
+      <p className="text-sm text-content-muted">
         “Em destaque” coloca a foto num quadro acima do texto; “como fundo” cobre a arte inteira, no
         lugar do template.
       </p>
@@ -225,7 +225,7 @@ function Slider({
         onChange={(event) => onChange(Number(event.target.value))}
         className="flex-1 accent-brand disabled:opacity-40"
       />
-      <span className="w-16 text-right font-mono text-[11px] text-content-muted">{format(value)}</span>
+      <span className="w-16 text-right font-mono text-xs text-content-muted">{format(value)}</span>
     </div>
   );
 }

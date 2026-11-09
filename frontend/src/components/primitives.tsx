@@ -12,7 +12,7 @@ export function PageHeader({ eyebrow, title, description, actions }: {
     <section className="border-b border-surface-high bg-surface-lowest">
       {/* py-6: numa ferramenta densa, 40px a mais de respiro no topo empurrava o trabalho
           para fora da primeira dobra em todas as telas. */}
-      <div className="mx-auto flex max-w-7xl flex-col gap-4 px-4 py-6 md:flex-row md:items-end md:justify-between md:px-8">
+      <div className="shell flex flex-col gap-4 py-6 md:flex-row md:items-end md:justify-between">
         <div className="flex max-w-2xl flex-col gap-2">
           <div className="flex items-center gap-2">
             <span className="h-2.5 w-2.5 rounded-full bg-brand shadow-glow" />
@@ -31,7 +31,7 @@ export function MetricCard({ label, value, hint }: { label: string; value: strin
   return (
     <div className="panel flex flex-col gap-1 p-4">
       <span className="label-code text-content-muted">{label}</span>
-      <span className="font-display text-xl text-content">{value}</span>
+      <span className="font-display text-lg text-content sm:text-xl">{value}</span>
       {hint && <span className="label-code text-brand-soft">{hint}</span>}
     </div>
   );

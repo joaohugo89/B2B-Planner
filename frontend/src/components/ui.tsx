@@ -43,7 +43,7 @@ export function Field({
         disabled={disabled}
         className="rounded bg-surface px-3 py-2 text-sm outline-none transition focus:ring-1 focus:ring-brand/60 disabled:opacity-60"
       />
-      {hint && <span className="text-[11px] text-content-muted">{hint}</span>}
+      {hint && <span className="text-xs text-content-muted">{hint}</span>}
     </label>
   );
 }
@@ -85,7 +85,7 @@ export function TextArea({
         }`}
       />
       <div className="flex items-start justify-between gap-2">
-        {hint ? <span className="text-[11px] text-content-muted">{hint}</span> : <span />}
+        {hint ? <span className="text-xs text-content-muted">{hint}</span> : <span />}
         {limite && (
           <span className="label-code shrink-0 text-content-muted">
             {value.length}/{limite}
@@ -127,7 +127,7 @@ export function Select<T extends string>({
           </option>
         ))}
       </select>
-      {hint && <span className="text-[11px] text-content-muted">{hint}</span>}
+      {hint && <span className="text-xs text-content-muted">{hint}</span>}
     </label>
   );
 }
@@ -157,7 +157,7 @@ export function Section({
         {actions && <div className="ml-auto flex items-center gap-2">{actions}</div>}
       </header>
 
-      {description && <p className="text-xs text-content-muted">{description}</p>}
+      {description && <p className="text-sm text-content-muted">{description}</p>}
 
       {children}
     </section>

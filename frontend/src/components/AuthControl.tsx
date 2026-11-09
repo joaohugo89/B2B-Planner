@@ -20,7 +20,7 @@ export function AuthControl() {
           onClick={() => setPanelOpen(true)}
           title="Abrir painel da conta"
         >
-          <span className="flex h-7 w-7 items-center justify-center rounded-full bg-brand font-mono text-[11px] text-brand-ink">
+          <span className="flex h-7 w-7 items-center justify-center rounded-full bg-brand font-mono text-xs text-brand-ink">
             {session.name.slice(0, 2).toUpperCase()}
           </span>
           <span className="hidden flex-col items-start leading-none sm:flex">

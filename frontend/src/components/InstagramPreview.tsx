@@ -30,7 +30,7 @@ export function InstagramPreview({ post, onClose }: { post: Post; onClose: () =>
       className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 p-4 backdrop-blur-sm"
       onClick={(event) => event.target === event.currentTarget && onClose()}
     >
-      <div className="flex max-h-[92vh] w-full max-w-[420px] flex-col overflow-hidden rounded-xl border border-surface-high bg-surface-lowest">
+      <div className="flex max-h-[92vh] w-full max-w-[26rem] flex-col overflow-hidden rounded-xl border border-surface-high bg-surface-lowest">
         <header className="flex items-center justify-between border-b border-surface-high px-3 py-2">
           <div className="flex items-center gap-2">
             <div className="rounded-full bg-gradient-to-tr from-brand-deep via-brand to-brand-soft p-[2px]">

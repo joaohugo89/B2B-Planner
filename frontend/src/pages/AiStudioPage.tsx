@@ -56,7 +56,7 @@ export function AiStudioPage() {
         }
       />
 
-      <div className="mx-auto flex max-w-7xl flex-col gap-6 px-4 py-10 md:px-8">
+      <div className="shell flex flex-col gap-6 py-10">
         {enabled === false && (
           <ErrorState message="Defina a variável ANTHROPIC_API_KEY no backend para habilitar o assistente." />
         )}
@@ -158,7 +158,7 @@ function ChatPanel({
             <select
               value={quantidade}
               onChange={(event) => setQuantidade(Number(event.target.value))}
-              className="rounded bg-surface-lowest px-2 py-1 font-mono text-[11px] outline-none"
+              className="rounded bg-surface-lowest px-2 py-1 font-mono text-xs outline-none"
             >
               {[1, 2, 3, 4, 5].map((n) => (
                 <option key={n} value={n}>{n} post{n > 1 ? 's' : ''}</option>
@@ -205,7 +205,7 @@ function ChatPanel({
               {message.role === 'assistant' && (
                 <button
                   type="button"
-                  className="self-start text-[11px] uppercase tracking-wide text-content-muted transition hover:text-brand-soft"
+                  className="self-start text-xs uppercase tracking-wide text-content-muted transition hover:text-brand-soft"
                   onClick={() => onUsarComoBriefing(message.content.slice(0, LIMITE_BRIEFING))}
                 >
                   ↗ usar como briefing
@@ -409,8 +409,8 @@ function DraftPanel({ brief, setBrief }: { brief: string; setBrief: (valor: stri
             <h3 className="font-display text-lg leading-tight">{draft.title}</h3>
           </div>
           <p className="text-sm text-content-muted">{draft.summary}</p>
-          <p className="whitespace-pre-line rounded bg-surface p-3 text-xs leading-relaxed">{draft.caption}</p>
-          <p className="font-mono text-[11px] text-content-variant">{draft.hashtags}</p>
+          <p className="whitespace-pre-line rounded bg-surface p-3 text-sm leading-relaxed">{draft.caption}</p>
+          <p className="font-mono text-sm text-content-variant">{draft.hashtags}</p>
           <div className="flex items-center justify-between">
             <span className="label-code text-content-muted">
               {draft.format} • {draft.audience} • {draft.slideCount} slide(s)
@@ -470,7 +470,7 @@ function PostsDaConversa({ drafts, onFechar }: { drafts: PostDraft[]; onFechar: 
       </header>
 
       {pendentes > 0 && (
-        <p className="text-xs text-content-muted">
+        <p className="text-sm text-content-muted">
           {pendentes === drafts.length
             ? 'Nenhum destes foi salvo ainda.'
             : `${pendentes} de ${drafts.length} ainda não foram salvos.`}{' '}
@@ -480,18 +480,18 @@ function PostsDaConversa({ drafts, onFechar }: { drafts: PostDraft[]; onFechar: 
 
       {erro && <p className="text-sm text-brand-soft">{erro}</p>}
 
-      <div className="grid grid-cols-1 gap-4 md:grid-cols-2 xl:grid-cols-3">
+      <div className="grid grid-cols-1 gap-4 md:grid-cols-2 xl:grid-cols-3 2xl:grid-cols-4">
         {drafts.map((draft, indice) => (
           <article key={indice} className="flex flex-col gap-2 rounded bg-surface-lowest p-3">
             <span className="label-code text-content-muted">{draft.brandPillar}</span>
             <h3 className="font-display text-base leading-tight">{draft.title}</h3>
-            <p className="text-xs text-content-muted">{draft.summary}</p>
+            <p className="text-sm text-content-muted">{draft.summary}</p>
 
-            <p className="max-h-40 overflow-y-auto whitespace-pre-line rounded bg-surface p-2 text-xs leading-relaxed">
+            <p className="max-h-40 overflow-y-auto whitespace-pre-line rounded bg-surface p-2 text-sm leading-relaxed">
               {draft.caption}
             </p>
 
-            <p className="font-mono text-[11px] text-brand-soft">{draft.hashtags}</p>
+            <p className="font-mono text-sm text-brand-soft">{draft.hashtags}</p>
 
             <div className="mt-auto flex items-center gap-2 pt-2">
               <span className="label-code text-content-muted">

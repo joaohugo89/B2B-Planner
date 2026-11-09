@@ -58,7 +58,7 @@ export function TemplateExportPage() {
         }
       />
 
-      <div className="mx-auto flex max-w-7xl flex-col gap-6 px-4 py-10 md:px-8">
+      <div className="shell flex flex-col gap-6 py-10">
         {session ? (
           <AssetUploadForm onUploaded={assets.reload} />
         ) : (
