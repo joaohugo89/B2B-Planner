@@ -1,14 +1,14 @@
 import { useEffect, useState } from 'react';
-import { Copy, Download, Instagram, Loader2, Pencil, Trash2 } from 'lucide-react';
+import { Copy, Instagram, Loader2, Pencil, Trash2 } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import { instagramApi, postsApi, type PublishStatus } from '../api/services';
 import { describeError } from '../api/client';
 import { useApi } from '../api/useApi';
 import { useAuth } from '../auth/AuthContext';
 import { PublicacaoEditor } from '../components/PublicacaoEditor';
+import { CarrosselPost } from '../components/CarrosselPost';
 import { EmptyState, ErrorState, LoadingState, PageHeader, StatusTag } from '../components/primitives';
 import type { Audience, Post, PostStatus } from '../types/api';
-import { assetUrl } from '../api/assetUrl';
 
 const AUDIENCE_LABEL: Record<Audience, string> = {
   B2B: 'B2B',
@@ -132,21 +132,7 @@ function PostInspector({ code, onDeleted }: { code: string; onDeleted: () => voi
       <div className="flex flex-col gap-3 lg:col-span-7">
         {/* Com arte final do editor, mostramos a imagem como ela vai ao ar. */}
         {post.coverImageUrl ? (
-          <>
-            <img
-              src={assetUrl(post.coverImageUrl)}
-              alt={`Arte do post ${post.code}`}
-              className="mx-auto w-full max-w-[500px] rounded-xl border border-outline-variant/30 shadow-2xl"
-            />
-            <a
-              href={assetUrl(post.coverImageUrl)}
-              download={`jhcomp-post-${post.code}.png`}
-              className="btn-ghost mx-auto"
-            >
-              <Download size={12} />
-              Baixar a arte
-            </a>
-          </>
+          <CarrosselPost post={post} />
         ) : (
         <div
           className="relative mx-auto flex w-full max-w-[500px] flex-col justify-between overflow-hidden rounded-xl border border-outline-variant/30 bg-surface-lowest p-8"
