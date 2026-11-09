@@ -12,6 +12,7 @@ const CopyGuidePage = lazy(() => import('./pages/CopyGuidePage').then((m) => ({ 
 const TemplateExportPage = lazy(() => import('./pages/TemplateExportPage').then((m) => ({ default: m.TemplateExportPage })));
 const AiStudioPage = lazy(() => import('./pages/AiStudioPage').then((m) => ({ default: m.AiStudioPage })));
 const PostStudioPage = lazy(() => import('./pages/PostStudioPage').then((m) => ({ default: m.PostStudioPage })));
+const VideoStudioPage = lazy(() => import('./pages/VideoStudioPage').then((m) => ({ default: m.VideoStudioPage })));
 const InstagramPage = lazy(() => import('./pages/InstagramPage').then((m) => ({ default: m.InstagramPage })));
 
 export default function App() {
@@ -27,6 +28,7 @@ export default function App() {
         <Route path="templates" element={<Protegida><TemplateExportPage /></Protegida>} />
         <Route path="ai" element={<Protegida><AiStudioPage /></Protegida>} />
         <Route path="studio" element={<Protegida><PostStudioPage /></Protegida>} />
+        <Route path="video" element={<Protegida><VideoStudioPage /></Protegida>} />
         <Route path="instagram" element={<Protegida><InstagramPage /></Protegida>} />
         <Route path="instagram/callback" element={<Protegida><InstagramPage /></Protegida>} />
 

@@ -333,3 +333,98 @@ export const authApi = {
     return data;
   },
 };
+
+// ---- Video Studio ----------------------------------------------------------
+
+export type VideoStep = 'VOZ' | 'LIPSYNC' | 'LEGENDAS' | 'RENDER';
+export type VideoJobState = 'NA_FILA' | 'EXECUTANDO' | 'CONCLUIDO' | 'ERRO' | 'CANCELADO';
+/** Os arquivos de um projeto; só os dois primeiros são enviados, o resto nasce de um job. */
+export type VideoFileKind = 'BASE' | 'AUDIO' | 'LIPSYNC' | 'SUBTITLES' | 'FINAL';
+
+export interface VideoJob {
+  id: number;
+  step: VideoStep;
+  state: VideoJobState;
+  error: string | null;
+  log: string | null;
+  createdAt: string;
+  startedAt: string | null;
+  finishedAt: string | null;
+}
+
+export interface VideoProject {
+  id: number;
+  title: string;
+  script: string | null;
+  postId: number | null;
+  hasBase: boolean;
+  hasAudio: boolean;
+  hasLipsync: boolean;
+  hasSubtitles: boolean;
+  hasFinal: boolean;
+  updatedAt: string;
+  jobs: VideoJob[];
+}
+
+type VideoProjectInput = { title: string; script: string | null; postId: number | null };
+
+export const videoApi = {
+  /** Quais etapas têm motor instalado no servidor. */
+  async engines() {
+    const { data } = await api.get<Record<VideoStep, boolean>>('/video/engines');
+    return data;
+  },
+  async list(postId?: number) {
+    const { data } = await api.get<VideoProject[]>('/video/projects', { params: { postId } });
+    return data;
+  },
+  async get(id: number) {
+    const { data } = await api.get<VideoProject>(`/video/projects/${id}`);
+    return data;
+  },
+  async create(payload: VideoProjectInput) {
+    const { data } = await api.post<VideoProject>('/video/projects', payload);
+    return data;
+  },
+  async update(id: number, payload: VideoProjectInput) {
+    const { data } = await api.put<VideoProject>(`/video/projects/${id}`, payload);
+    return data;
+  },
+  async remove(id: number) {
+    await api.delete(`/video/projects/${id}`);
+  },
+  async script(id: number, topic: string) {
+    const { data } = await api.post<VideoProject>(`/video/projects/${id}/script`, { topic });
+    return data;
+  },
+  async upload(id: number, kind: 'BASE' | 'AUDIO', file: File) {
+    const body = new FormData();
+    body.append('file', file);
+    // Vídeo é grande: sem o timeout padrão, que cortaria o envio no meio.
+    const { data } = await api.post<VideoProject>(`/video/projects/${id}/files/${kind}`, body, { timeout: 0 });
+    return data;
+  },
+  /**
+   * O arquivo vem como blob porque a rota exige o token, e um <video src> não manda
+   * cabeçalho. Quem chama cria o endereço blob: e o revoga ao sair.
+   */
+  async file(id: number, kind: VideoFileKind) {
+    const { data } = await api.get<Blob>(`/video/projects/${id}/files/${kind}`, { responseType: 'blob', timeout: 0 });
+    return data;
+  },
+  async subtitles(id: number) {
+    const { data } = await api.get<{ text: string }>(`/video/projects/${id}/subtitles`);
+    return data.text;
+  },
+  async saveSubtitles(id: number, text: string) {
+    const { data } = await api.put<VideoProject>(`/video/projects/${id}/subtitles`, { text });
+    return data;
+  },
+  async submit(id: number, step: VideoStep) {
+    const { data } = await api.post<VideoJob>(`/video/projects/${id}/jobs`, { step });
+    return data;
+  },
+  async cancel(jobId: number) {
+    await api.post(`/video/jobs/${jobId}/cancel`);
+  },
+};

@@ -255,6 +255,10 @@ seletores.
 | POST | `/api/assets/upload` | Upload do arquivo + registro do template (multipart, exige JWT) |
 | GET | `/api/assets/files/{arquivo}` | Serve o arquivo enviado (prévia e download) |
 | GET | `/api/copies?tone=&postCode=` | Legendas e hashtags |
+| GET/POST | `/api/video/projects` | Video Studio: projetos de vídeo (exige JWT em tudo) |
+| POST | `/api/video/projects/{id}/files/{tipo}` | Envia o vídeo-base (`BASE`) ou o áudio (`AUDIO`), multipart, até 512 MB |
+| POST | `/api/video/projects/{id}/jobs` | Roda uma etapa: `VOZ`, `LIPSYNC`, `LEGENDAS` ou `RENDER` |
+| GET | `/api/video/projects/{id}/files/{tipo}` | Baixa um arquivo do projeto, inclusive o `FINAL` |
 
 ### Editor de Posts
 
@@ -377,6 +381,14 @@ Os 24 já estão cadastrados no catálogo. Os 16 registros de exemplo do seed fo
 
 **Política de acesso:** leituras (`GET /api/**`) são públicas para facilitar o uso do painel;
 toda escrita exige `Authorization: Bearer <accessToken>`.
+
+### Video Studio
+
+Produção de vídeo dentro do planner: roteiro, voz, sincronia labial, legendas e render,
+cada etapa refazível sozinha. O render usa FFmpeg (`winget install Gyan.FFmpeg`, ou a
+imagem Docker, que já o traz); voz, sincronia e transcrição são motores externos
+configurados por variável de ambiente e ficam desligados até serem instalados. Plano,
+arquitetura, licenças e passo a passo em [`docs/content-studio/`](docs/content-studio/).
 
 ## 3. Frontend
 

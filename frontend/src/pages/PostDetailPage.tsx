@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react';
 import { Copy, Instagram, Loader2, Pencil, Trash2 } from 'lucide-react';
 import { Link } from 'react-router-dom';
-import { instagramApi, postsApi, type PublishStatus } from '../api/services';
+import { instagramApi, postsApi, videoApi, type PublishStatus } from '../api/services';
 import { describeError } from '../api/client';
 import { useApi } from '../api/useApi';
 import { useAuth } from '../auth/AuthContext';
@@ -233,6 +233,8 @@ function PostInspector({
           )}
         </div>
 
+        {session && <VideosDoPost postId={post.id} />}
+
         <dl className="grid grid-cols-2 gap-3">
           <Meta label="Formato" value={`${post.format} (${post.slideCount} slide${post.slideCount > 1 ? 's' : ''})`} />
           <Meta label="Público" value={AUDIENCE_LABEL[post.audience]} />
@@ -427,6 +429,24 @@ function Limite({ rotulo, valor, limite }: { rotulo: string; valor: number; limi
     >
       {rotulo} {valor}/{limite}
     </span>
+  );
+}
+
+/** Os vídeos do Video Studio vinculados a esta publicação; some quando não há nenhum. */
+function VideosDoPost({ postId }: { postId: number }) {
+  const videos = useApi(() => videoApi.list(postId), [postId]);
+  if (!videos.data?.length) return null;
+
+  return (
+    <div className="flex flex-col gap-2">
+      <span className="label-code text-content-muted">Vídeos desta publicação</span>
+      {videos.data.map((video) => (
+        <Link key={video.id} to={`/video?projeto=${video.id}`} className="btn-ghost justify-between">
+          {video.title}
+          <span className="text-content-muted">{video.hasFinal ? 'pronto' : 'em produção'}</span>
+        </Link>
+      ))}
+    </div>
   );
 }
 

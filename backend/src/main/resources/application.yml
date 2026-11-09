@@ -24,8 +24,9 @@ spring:
         format_sql: true
   servlet:
     multipart:
-      max-file-size: 25MB
-      max-request-size: 25MB
+      # Era 25MB quando só havia artes; um vídeo-base de celular passa disso com folga.
+      max-file-size: 512MB
+      max-request-size: 512MB
   flyway:
     enabled: true
     locations: classpath:db/migration
@@ -79,6 +80,16 @@ jhcomp:
     usage-log: ${AI_USAGE_LOG:logs/api_usage.log}
     # Tempo que um rascunho igual fica em cache, em minutos.
     draft-cache-minutes: ${AI_DRAFT_CACHE_MINUTES:60}
+  video:
+    # Uma pasta por projeto. Fica dentro de uploads/ para aproveitar o volume do compose.
+    dir: ${VIDEO_DIR:uploads/video}
+    ffmpeg: ${FFMPEG_PATH:ffmpeg}
+    step-timeout-minutes: ${VIDEO_STEP_TIMEOUT_MINUTES:60}
+    # Modelos de comando dos motores; vazio desliga a etapa. Marcadores: {text} {audio}
+    # {video} {out}. Exemplos em docs/content-studio/08-deployment-and-operations.md.
+    voice-command: ${VIDEO_VOICE_COMMAND:}
+    lipsync-command: ${VIDEO_LIPSYNC_COMMAND:}
+    transcribe-command: ${VIDEO_TRANSCRIBE_COMMAND:}
   admin:
     # Vazia: senha aleatória gerada no primeiro boot e impressa no log uma única vez.
     password: ${JHCOMP_ADMIN_PASSWORD:}

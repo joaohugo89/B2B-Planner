@@ -14,6 +14,7 @@ const NAV = [
   { to: '/copy', label: 'Guia de Copy', end: false, publico: false },
   { to: '/templates', label: 'Exportador de Templates', end: false, publico: false },
   { to: '/studio', label: 'Editor de Posts', end: false, publico: false },
+  { to: '/video', label: 'Video Studio', end: false, publico: false },
   { to: '/ai', label: 'Assistente IA', end: false, publico: false },
   { to: '/instagram', label: 'Instagram', end: false, publico: false },
 ];

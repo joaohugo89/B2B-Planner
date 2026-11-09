@@ -17,7 +17,10 @@ FROM eclipse-temurin:25-jre-alpine
 WORKDIR /app
 
 # Usuário sem privilégios; a pasta de uploads fica gravável para o modo storage=disk.
-RUN addgroup -S planner && adduser -S planner -G planner \
+# ffmpeg: o Video Studio renderiza o MP4 final com ele. A fonte não é enfeite: sem
+# nenhuma instalada, o filtro de legendas termina sem erro e a legenda sai invisível.
+RUN apk add --no-cache ffmpeg font-dejavu \
+    && addgroup -S planner && adduser -S planner -G planner \
     && mkdir -p /app/uploads && chown -R planner:planner /app
 
 COPY --from=build --chown=planner:planner /build/target/*.jar /app/app.jar

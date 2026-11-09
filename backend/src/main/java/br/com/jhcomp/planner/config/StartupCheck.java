@@ -25,7 +25,8 @@ public class StartupCheck {
     @Bean
     public ApplicationRunner reportConfiguration(Environment environment,
                                                  InstagramService instagram,
-                                                 AiAssistantService ai) {
+                                                 AiAssistantService ai,
+                                                 br.com.jhcomp.planner.video.VideoPipeline video) {
         return args -> {
             List<String> linhas = new ArrayList<>();
 
@@ -51,6 +52,17 @@ public class StartupCheck {
                     instagram.connectedAccount()
                             .map(conta -> "@" + conta.getUsername())
                             .orElse("nenhuma conta conectada — use a aba Instagram")));
+
+            var motores = video.engines();
+            boolean render = Boolean.TRUE.equals(motores.get(br.com.jhcomp.planner.video.VideoJob.Step.RENDER));
+            linhas.add(item("Video Studio (render)", render,
+                    render ? "FFmpeg encontrado" : "FFmpeg não encontrado — instale ou defina FFMPEG_PATH"));
+            motores.remove(br.com.jhcomp.planner.video.VideoJob.Step.RENDER);
+            linhas.add(item("Video Studio (motores)", motores.containsValue(true),
+                    motores.containsValue(true)
+                            ? "ligados: " + motores.entrySet().stream().filter(java.util.Map.Entry::getValue)
+                                    .map(e -> e.getKey().name()).toList()
+                            : "nenhum motor de IA configurado — áudio e legenda entram à mão"));
 
             log.info("""
 
