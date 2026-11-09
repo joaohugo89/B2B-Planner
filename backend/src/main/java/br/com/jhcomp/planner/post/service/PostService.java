@@ -96,6 +96,7 @@ public class PostService {
     /** Troca as artes do carrossel; a primeira vira a capa do post. */
     public Post replaceSlides(Long id, List<String> slides) {
         Post post = getById(id);
+        slides.forEach(PostService::exigirUrlDeArte);
         post.replaceSlides(slides);
         if (post.getSlides().size() > 1) {
             post.setFormat(PostFormat.CARROSSEL);
@@ -136,6 +137,24 @@ public class PostService {
                 all.stream().filter(p -> p.getFormat() == PostFormat.ESTATICO).count(),
                 reach,
                 saves);
+    }
+
+    /**
+     * Aceita so o que vira imagem: caminho do proprio planner ou endereco http(s) de um
+     * bucket. Guardar "javascript:..." aqui nao quebra nada no backend, mas a tela monta o
+     * link de download com esse valor — e um XSS armazenado nasce assim.
+     */
+    private static void exigirUrlDeArte(String url) {
+        String limpo = url == null ? "" : url.trim();
+
+        if (limpo.isEmpty()) {
+            throw new IllegalArgumentException("Slide sem endereço de imagem.");
+        }
+        if (limpo.startsWith("/") || limpo.startsWith("http://") || limpo.startsWith("https://")) {
+            return;
+        }
+        throw new IllegalArgumentException(
+                "Endereço de arte inválido: use um caminho do planner ou uma URL http(s).");
     }
 
     private long count(List<Post> posts, PostStatus status) {

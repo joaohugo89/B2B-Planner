@@ -36,6 +36,7 @@ import static org.mockito.Mockito.verifyNoInteractions;
 import static org.mockito.Mockito.when;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.patch;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.put;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
@@ -263,5 +264,19 @@ class PostControllerTest {
         mockMvc.perform(get("/api/posts/7").header("Authorization", bearer()))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.status").value("RASCUNHO"));
+    }
+
+    @Test
+    @DisplayName("slide com esquema executavel e recusado antes de chegar ao banco")
+    void slidesRejectExecutableUrls() throws Exception {
+        when(service.replaceSlides(eq(1L), any()))
+                .thenThrow(new IllegalArgumentException("Endereço de arte inválido."));
+
+        mockMvc.perform(put("/api/posts/1/slides")
+                        .header("Authorization", bearer())
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"slides\":[\"javascript:alert(1)\"]}"))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.error").value("INVALID_VALUE"));
     }
 }
