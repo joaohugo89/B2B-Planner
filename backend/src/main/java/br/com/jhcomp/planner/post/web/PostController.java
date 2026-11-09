@@ -3,7 +3,6 @@ package br.com.jhcomp.planner.post.web;
 import br.com.jhcomp.planner.post.domain.Audience;
 import br.com.jhcomp.planner.post.domain.PostStatus;
 import br.com.jhcomp.planner.post.service.PostService;
-import br.com.jhcomp.planner.post.web.dto.PostDtos.PlannerMetrics;
 import br.com.jhcomp.planner.post.web.dto.PostDtos.PostRequest;
 import br.com.jhcomp.planner.post.web.dto.PostDtos.PostResponse;
 import br.com.jhcomp.planner.post.web.dto.PostDtos.SlidesRequest;
@@ -43,11 +42,6 @@ public class PostController {
     public List<PostResponse> list(@RequestParam(required = false) PostStatus status,
                                    @RequestParam(required = false) Audience audience) {
         return service.list(status, audience, apenasFinalizados()).stream().map(PostResponse::from).toList();
-    }
-
-    @GetMapping("/metrics")
-    public PlannerMetrics metrics() {
-        return service.metrics(apenasFinalizados());
     }
 
     @GetMapping("/{id}")

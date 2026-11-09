@@ -59,7 +59,8 @@ export function PostDetailPage() {
             {current && (
               <PostInspector
                 key={current.id}
-                code={current.code}
+                post={current}
+                onChanged={posts.reload}
                 onDeleted={() => {
                   setSelected(null);
                   posts.reload();
@@ -80,10 +81,23 @@ const STATUS_FLOW: { value: PostStatus; label: string; hint: string }[] = [
   { value: 'PUBLICADO', label: 'Publicado', hint: 'Já está no ar' },
 ];
 
-function PostInspector({ code, onDeleted }: { code: string; onDeleted: () => void }) {
+/**
+ * O painel do post selecionado.
+ *
+ * <p>Recebe o post pronto das abas acima em vez de buscá-lo de novo por código: a lista já
+ * traz todos os campos, e a segunda requisição só repetia o que estava na tela. Depois de
+ * salvar, mudar a situação ou publicar, `onChanged` recarrega a lista — a fonte única.</p>
+ */
+function PostInspector({
+  post,
+  onChanged,
+  onDeleted,
+}: {
+  post: Post;
+  onChanged: () => void;
+  onDeleted: () => void;
+}) {
   const { session } = useAuth();
-  // Um rascunho só existe para quem está logado: entrar ou sair refaz a busca.
-  const { data: post, loading, error, reload } = useApi(() => postsApi.byCode(code), [code, Boolean(session)]);
   const [copied, setCopied] = useState(false);
   const [statusBusy, setStatusBusy] = useState(false);
   const [statusError, setStatusError] = useState<string | null>(null);
@@ -92,7 +106,7 @@ function PostInspector({ code, onDeleted }: { code: string; onDeleted: () => voi
 
   /** Remove o post do planner; a arte continua no catálogo de assets. */
   async function deletePost() {
-    if (!post || deleting) return;
+    if (deleting) return;
     setDeleting(true);
     setStatusError(null);
     try {
@@ -107,24 +121,18 @@ function PostInspector({ code, onDeleted }: { code: string; onDeleted: () => voi
   }
 
   async function changeStatus(next: PostStatus) {
-    if (!post || statusBusy) return;
+    if (statusBusy) return;
     setStatusBusy(true);
     setStatusError(null);
     try {
       await postsApi.changeStatus(post.id, next);
-      reload();
+      onChanged();
     } catch (err) {
       setStatusError(describeError(err));
     } finally {
       setStatusBusy(false);
     }
   }
-
-  // Só troca a prancha por spinner na primeira carga: num reload depois de salvar,
-  // desmontar o painel apagaria o retorno da ação.
-  if (loading && !post) return <LoadingState label="Renderizando prancha…" />;
-  if (error && !post) return <ErrorState message={error} onRetry={reload} />;
-  if (!post) return null;
 
   const caption = [post.caption, post.hashtags].filter(Boolean).join('\n\n') || post.summary || '';
 
@@ -206,12 +214,12 @@ function PostInspector({ code, onDeleted }: { code: string; onDeleted: () => voi
               onCancel={() => setEditando(false)}
               onSaved={() => {
                 setEditando(false);
-                reload();
+                onChanged();
               }}
             />
           )}
 
-          {session && <PublishControl post={post} onPublished={reload} />}
+          {session && <PublishControl post={post} onPublished={onChanged} />}
 
           {session && (
             <ConfirmAction

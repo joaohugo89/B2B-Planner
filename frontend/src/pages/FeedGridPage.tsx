@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useMemo, useState } from 'react';
 import { Copy, Layers, Image as ImageIcon, CalendarDays, Instagram } from 'lucide-react';
 import { postsApi } from '../api/services';
 import { useApi } from '../api/useApi';
@@ -13,6 +13,31 @@ const AUDIENCE_LABEL: Record<Audience, string> = {
   B2C: 'B2C',
   HIBRIDO: 'Híbrido',
 };
+
+/**
+ * Os números do topo, somados da lista que a tela já carregou.
+ *
+ * <p>Antes vinham de /api/posts/metrics — uma segunda requisição que relia a mesma tabela
+ * para contar o que já estava aqui na memória. O filtro de rascunhos é do backend, então as
+ * contas batem com o que está na grade, logado ou não.</p>
+ */
+function resumir(posts: Post[]) {
+  const soma = (pegar: (post: Post) => number | null) =>
+    posts.reduce((total, post) => total + (pegar(post) ?? 0), 0);
+  const quantos = (condicao: (post: Post) => boolean) => posts.filter(condicao).length;
+
+  return {
+    total: posts.length,
+    readyToPost: quantos((post) => post.status === 'PRONTO_PARA_POSTAR'),
+    scheduled: quantos((post) => post.status === 'AGENDADO'),
+    b2b: quantos((post) => post.audience === 'B2B'),
+    b2c: quantos((post) => post.audience === 'B2C'),
+    carousels: quantos((post) => post.format === 'CARROSSEL'),
+    statics: quantos((post) => post.format === 'ESTATICO'),
+    estimatedReach: soma((post) => post.estimatedReach),
+    estimatedSaves: soma((post) => post.estimatedSaves),
+  };
+}
 
 function plural(count: number, singular: string, many: string): string {
   return `${count} ${count === 1 ? singular : many}`;
@@ -113,10 +138,10 @@ function PostCard({ post, ratio }: { post: Post; ratio: '4/5' | '1/1' }) {
 export function FeedGridPage() {
   const { session } = useAuth();
   const [ratio, setRatio] = useState<'4/5' | '1/1'>('4/5');
-  // Entrar ou sair muda o que a API devolve, então as duas chamadas refazem junto.
+  // Entrar ou sair muda o que a API devolve, então a lista refaz junto.
   const logado = Boolean(session);
   const posts = useApi(() => postsApi.list(), [logado]);
-  const metrics = useApi(() => postsApi.metrics(), [logado]);
+  const metrics = useMemo(() => (posts.data ? resumir(posts.data) : null), [posts.data]);
 
   return (
     <>
@@ -143,30 +168,30 @@ export function FeedGridPage() {
       />
 
       <div className="mx-auto flex max-w-7xl flex-col gap-8 px-4 py-10 md:px-8">
-        {metrics.data && (
+        {metrics && (
           <div className="grid grid-cols-2 gap-4 md:grid-cols-4">
             <MetricCard
               label="Distribuição"
-              value={`${metrics.data.b2b} B2B / ${metrics.data.b2c} B2C`}
-              hint={`${metrics.data.total} posts no ciclo`}
+              value={`${metrics.b2b} B2B / ${metrics.b2c} B2C`}
+              hint={`${metrics.total} posts no ciclo`}
             />
             <MetricCard
               label="Formatos"
-              value={`${plural(metrics.data.carousels, 'carrossel', 'carrosséis')} / ${plural(
-                metrics.data.statics,
+              value={`${plural(metrics.carousels, 'carrossel', 'carrosséis')} / ${plural(
+                metrics.statics,
                 'estático',
                 'estáticos',
               )}`}
             />
             <MetricCard
               label="Estado de produção"
-              value={`${metrics.data.readyToPost}/${metrics.data.total} aprovados`}
-              hint={`${metrics.data.scheduled} agendados`}
+              value={`${metrics.readyToPost}/${metrics.total} aprovados`}
+              hint={`${metrics.scheduled} agendados`}
             />
             <MetricCard
               label="Alcance estimado"
-              value={metrics.data.estimatedReach.toLocaleString('pt-BR')}
-              hint={`${metrics.data.estimatedSaves.toLocaleString('pt-BR')} salvos previstos`}
+              value={metrics.estimatedReach.toLocaleString('pt-BR')}
+              hint={`${metrics.estimatedSaves.toLocaleString('pt-BR')} salvos previstos`}
             />
           </div>
         )}

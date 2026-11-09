@@ -248,7 +248,6 @@ seletores.
 | POST | `/api/auth/login` | Emite access + refresh token |
 | POST | `/api/auth/refresh` | Renova o access token |
 | GET | `/api/posts?status=&audience=` | Lista posts do planner |
-| GET | `/api/posts/metrics` | Métricas agregadas (distribuição, formatos, alcance) |
 | GET | `/api/posts/code/{code}` | Post por código (`01`…`06`) |
 | POST/PUT/PATCH/DELETE | `/api/posts...` | CRUD + troca de status (exige JWT) |
 | GET | `/api/assets?kind=&ratio=` | Templates, backgrounds e logos |

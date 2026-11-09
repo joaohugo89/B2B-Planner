@@ -89,17 +89,4 @@ public final class PostDtos {
     /** Substitui as artes do carrossel, na ordem enviada. */
     public record SlidesRequest(java.util.List<String> slides) {
     }
-
-    public record PlannerMetrics(
-            long total,
-            long readyToPost,
-            long scheduled,
-            long published,
-            long b2b,
-            long b2c,
-            long carousels,
-            long statics,
-            long estimatedReach,
-            long estimatedSaves) {
-    }
 }

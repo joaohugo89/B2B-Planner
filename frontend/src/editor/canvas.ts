@@ -98,8 +98,8 @@ export interface PhotoTransform {
   backdrop?: string;
 }
 
-export const MIN_PHOTO_ZOOM = 0.4;
-export const MAX_PHOTO_ZOOM = 3;
+const MIN_PHOTO_ZOOM = 0.4;
+const MAX_PHOTO_ZOOM = 3;
 
 /**
  * Cobre a área informada com a imagem, aplicando zoom e deslocamento.
@@ -158,7 +158,7 @@ export function roundedRect(
 }
 
 /** Quebra o texto em linhas que cabem em maxWidth. */
-export function wrapLines(ctx: CanvasRenderingContext2D, text: string, maxWidth: number): string[] {
+function wrapLines(ctx: CanvasRenderingContext2D, text: string, maxWidth: number): string[] {
   const lines: string[] = [];
 
   for (const paragraph of text.split('\n')) {

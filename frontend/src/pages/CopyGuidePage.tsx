@@ -32,7 +32,7 @@ const EMPTY_FORM = {
 type FormState = typeof EMPTY_FORM;
 
 /** Junta as hashtags da legenda com as fixas da marca, sem repetir. */
-export function mergeHashtags(entryTags: string | null, globalTags: string): string {
+function mergeHashtags(entryTags: string | null, globalTags: string): string {
   const words = `${entryTags ?? ''} ${globalTags ?? ''}`.split(/\s+/).filter(Boolean);
   const seen = new Set<string>();
   return words

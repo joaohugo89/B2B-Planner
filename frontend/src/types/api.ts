@@ -1,12 +1,12 @@
 export type PostStatus = 'RASCUNHO' | 'AGENDADO' | 'PRONTO_PARA_POSTAR' | 'PUBLICADO';
-export type PostFormat = 'ESTATICO' | 'CARROSSEL' | 'REELS';
+type PostFormat = 'ESTATICO' | 'CARROSSEL' | 'REELS';
 export type Audience = 'B2B' | 'B2C' | 'HIBRIDO';
 /** Código do tom cadastrado no Guia de Copy. */
-export type CopyTone = string;
+type CopyTone = string;
 /** ARTE é a imagem final de um post, gerada no editor — não entra no catálogo de templates. */
 export type AssetKind = 'BACKGROUND' | 'LOGO' | 'GUIDELINE' | 'ARTE' | 'FOTO';
-export type AssetRatio = 'RATIO_4_5' | 'RATIO_1_1' | 'VECTOR';
-export type AssetTheme = 'DARK' | 'LIGHT';
+type AssetRatio = 'RATIO_4_5' | 'RATIO_1_1' | 'VECTOR';
+type AssetTheme = 'DARK' | 'LIGHT';
 
 export interface Post {
   id: number;
@@ -36,19 +36,6 @@ export interface Post {
 }
 
 export type PublishState = 'PUBLICANDO' | 'CONCLUIDO' | 'ERRO';
-
-export interface PlannerMetrics {
-  total: number;
-  readyToPost: number;
-  scheduled: number;
-  published: number;
-  b2b: number;
-  b2c: number;
-  carousels: number;
-  statics: number;
-  estimatedReach: number;
-  estimatedSaves: number;
-}
 
 export interface TemplateAsset {
   id: number;

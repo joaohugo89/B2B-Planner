@@ -8,7 +8,6 @@ import br.com.jhcomp.planner.post.domain.Post;
 import br.com.jhcomp.planner.post.domain.PostFormat;
 import br.com.jhcomp.planner.post.domain.PostStatus;
 import br.com.jhcomp.planner.post.service.PostService;
-import br.com.jhcomp.planner.post.web.dto.PostDtos.PlannerMetrics;
 import br.com.jhcomp.planner.security.JwtAuthenticationFilter;
 import br.com.jhcomp.planner.security.JwtService;
 import br.com.jhcomp.planner.user.domain.AppUser;
@@ -122,18 +121,6 @@ class PostControllerTest {
         mockMvc.perform(get("/api/posts").param("status", "INVENTADO"))
                 .andExpect(status().isBadRequest())
                 .andExpect(jsonPath("$.error").value("VALIDATION_ERROR"));
-    }
-
-    @Test
-    @DisplayName("GET /api/posts/metrics devolve o resumo do planner")
-    void metricsAreExposed() throws Exception {
-        when(service.metrics(true)).thenReturn(new PlannerMetrics(6, 3, 3, 0, 2, 2, 5, 1, 15500, 2380));
-
-        mockMvc.perform(get("/api/posts/metrics"))
-                .andExpect(status().isOk())
-                .andExpect(jsonPath("$.total").value(6))
-                .andExpect(jsonPath("$.readyToPost").value(3))
-                .andExpect(jsonPath("$.estimatedReach").value(15500));
     }
 
     @Test

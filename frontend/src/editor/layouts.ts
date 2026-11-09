@@ -26,8 +26,8 @@ export interface TextScale {
 export const DEFAULT_SCALE: TextScale = { headline: 1, body: 1, label: 1 };
 
 /** Onde o bloco de texto fica na arte. */
-export type VerticalAnchor = 'TOP' | 'MIDDLE' | 'BOTTOM';
-export type HorizontalAlign = 'LEFT' | 'CENTER';
+type VerticalAnchor = 'TOP' | 'MIDDLE' | 'BOTTOM';
+type HorizontalAlign = 'LEFT' | 'CENTER';
 
 /** Como a foto enviada pelo usuário entra na arte. */
 export type PhotoMode = 'BACKGROUND' | 'FRAME';

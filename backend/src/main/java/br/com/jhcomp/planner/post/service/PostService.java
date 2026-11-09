@@ -6,7 +6,6 @@ import br.com.jhcomp.planner.post.domain.Post;
 import br.com.jhcomp.planner.post.domain.PostFormat;
 import br.com.jhcomp.planner.post.domain.PostStatus;
 import br.com.jhcomp.planner.post.repository.PostRepository;
-import br.com.jhcomp.planner.post.web.dto.PostDtos.PlannerMetrics;
 import br.com.jhcomp.planner.post.web.dto.PostDtos.PostRequest;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -114,31 +113,6 @@ public class PostService {
         repository.delete(getById(id));
     }
 
-    @Transactional(readOnly = true)
-    public PlannerMetrics metrics() {
-        return metrics(false);
-    }
-
-    /** Com somenteFinalizados, os números batem com a lista que o visitante vê. */
-    @Transactional(readOnly = true)
-    public PlannerMetrics metrics(boolean somenteFinalizados) {
-        List<Post> all = list(null, null, somenteFinalizados);
-        long reach = all.stream().filter(p -> p.getEstimatedReach() != null).mapToLong(Post::getEstimatedReach).sum();
-        long saves = all.stream().filter(p -> p.getEstimatedSaves() != null).mapToLong(Post::getEstimatedSaves).sum();
-
-        return new PlannerMetrics(
-                all.size(),
-                count(all, PostStatus.PRONTO_PARA_POSTAR),
-                count(all, PostStatus.AGENDADO),
-                count(all, PostStatus.PUBLICADO),
-                all.stream().filter(p -> p.getAudience() == Audience.B2B).count(),
-                all.stream().filter(p -> p.getAudience() == Audience.B2C).count(),
-                all.stream().filter(p -> p.getFormat() == PostFormat.CARROSSEL).count(),
-                all.stream().filter(p -> p.getFormat() == PostFormat.ESTATICO).count(),
-                reach,
-                saves);
-    }
-
     /**
      * Aceita so o que vira imagem: caminho do proprio planner ou endereco http(s) de um
      * bucket. Guardar "javascript:..." aqui nao quebra nada no backend, mas a tela monta o
@@ -155,10 +129,6 @@ public class PostService {
         }
         throw new IllegalArgumentException(
                 "Endereço de arte inválido: use um caminho do planner ou uma URL http(s).");
-    }
-
-    private long count(List<Post> posts, PostStatus status) {
-        return posts.stream().filter(p -> p.getStatus() == status).count();
     }
 
     private void apply(Post post, PostRequest request) {

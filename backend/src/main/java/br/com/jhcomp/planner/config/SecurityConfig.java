@@ -62,7 +62,7 @@ public class SecurityConfig {
                         // A única tela aberta é o Feed Grid: os posts já finalizados (o
                         // PostController esconde os rascunhos de quem não está logado) e os
                         // arquivos das artes, que as imagens do feed precisam carregar.
-                        .requestMatchers(HttpMethod.GET, "/api/posts", "/api/posts/metrics",
+                        .requestMatchers(HttpMethod.GET, "/api/posts",
                                 "/api/posts/*", "/api/posts/code/*").permitAll()
                         .requestMatchers(HttpMethod.GET, "/api/assets/files/**").permitAll()
                         // Todo o resto é a bancada de trabalho — legendas, tons, catálogo de

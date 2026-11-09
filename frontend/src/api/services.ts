@@ -1,7 +1,6 @@
 import { api } from './client';
 import type {
   CopyEntry,
-  PlannerMetrics,
   Post,
   PostStatus,
   PublishState,
@@ -11,14 +10,6 @@ import type {
 export const postsApi = {
   async list(params?: { status?: PostStatus; audience?: string }) {
     const { data } = await api.get<Post[]>('/posts', { params });
-    return data;
-  },
-  async metrics() {
-    const { data } = await api.get<PlannerMetrics>('/posts/metrics');
-    return data;
-  },
-  async byCode(code: string) {
-    const { data } = await api.get<Post>(`/posts/code/${code}`);
     return data;
   },
   async changeStatus(id: number, status: PostStatus) {
@@ -99,7 +90,7 @@ export const aiApi = {
   },
 };
 
-export interface AiUsageEntry {
+interface AiUsageEntry {
   at: string;
   operation: string;
   model: string;
@@ -215,7 +206,7 @@ export interface InstagramStatus {
   tokenValid: boolean | null;
 }
 
-export interface ContentCheck {
+interface ContentCheck {
   ok: boolean;
   captionLength: number;
   maxCaption: number;
