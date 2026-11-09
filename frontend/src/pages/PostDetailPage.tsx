@@ -7,6 +7,7 @@ import { useApi } from '../api/useApi';
 import { useAuth } from '../auth/AuthContext';
 import { PublicacaoEditor } from '../components/PublicacaoEditor';
 import { CarrosselPost } from '../components/CarrosselPost';
+import { ConfirmAction } from '../components/ui';
 import { copiarTexto, EmptyState, ErrorState, LoadingState, PageHeader, StatusTag } from '../components/primitives';
 import type { Audience, Post, PostStatus } from '../types/api';
 
@@ -87,7 +88,6 @@ function PostInspector({ code, onDeleted }: { code: string; onDeleted: () => voi
   const [statusBusy, setStatusBusy] = useState(false);
   const [statusError, setStatusError] = useState<string | null>(null);
   const [editando, setEditando] = useState(false);
-  const [confirmingDelete, setConfirmingDelete] = useState(false);
   const [deleting, setDeleting] = useState(false);
 
   /** Remove o post do planner; a arte continua no catálogo de assets. */
@@ -101,7 +101,8 @@ function PostInspector({ code, onDeleted }: { code: string; onDeleted: () => voi
     } catch (err) {
       setStatusError(describeError(err));
       setDeleting(false);
-      setConfirmingDelete(false);
+      // A pergunta continua aberta de propósito: falhou, você lê o erro e tenta de novo
+      // sem ter que clicar em "Apagar post" outra vez.
     }
   }
 
@@ -213,27 +214,14 @@ function PostInspector({ code, onDeleted }: { code: string; onDeleted: () => voi
           {session && <PublishControl post={post} onPublished={reload} />}
 
           {session && (
-            confirmingDelete ? (
-              <div className="flex flex-col gap-2 rounded border border-outline-variant/50 bg-surface-lowest p-3">
-                <span className="text-xs text-content-muted">
-                  Apagar o post {post.code} do planner? A ação não pode ser desfeita (as artes continuam no catálogo).
-                </span>
-                <div className="flex items-center gap-2">
-                  <button type="button" className="btn-primary" onClick={deletePost} disabled={deleting}>
-                    <Trash2 size={12} />
-                    {deleting ? 'Apagando…' : 'Apagar post'}
-                  </button>
-                  <button type="button" className="btn-ghost" onClick={() => setConfirmingDelete(false)} disabled={deleting}>
-                    Cancelar
-                  </button>
-                </div>
-              </div>
-            ) : (
-              <button type="button" className="btn-ghost self-start" onClick={() => setConfirmingDelete(true)}>
-                <Trash2 size={12} />
-                Apagar post
-              </button>
-            )
+            <ConfirmAction
+              label="Apagar post"
+              icon={<Trash2 size={12} />}
+              question={`Apagar o post ${post.code} do planner? A ação não pode ser desfeita (as artes continuam no catálogo).`}
+              confirmLabel={deleting ? 'Apagando…' : 'Apagar post'}
+              onConfirm={deletePost}
+              busy={deleting}
+            />
           )}
         </div>
 

@@ -2,7 +2,11 @@ import { useState } from 'react';
 import { Check, X } from 'lucide-react';
 import { postsApi } from '../api/services';
 import { describeError } from '../api/client';
+import { Button, Field, TextArea } from './ui';
 import type { Post } from '../types/api';
+
+/** Teto de legenda do Instagram; o contador avisa antes de a Meta recusar. */
+const LIMITE_LEGENDA = 2200;
 
 /**
  * Edição dos textos de um post já criado: título, resumo, legenda, hashtags e CTA.
@@ -60,64 +64,41 @@ export function PublicacaoEditor({
 
   return (
     <div className="flex flex-col gap-3 rounded border border-outline-variant/50 bg-surface-lowest p-3">
-      <Campo label="Título" valor={title} aoMudar={setTitle} />
-      <Campo label="Resumo" valor={summary} aoMudar={setSummary} />
+      <Field label="Título" value={title} onChange={setTitle} />
+      <Field label="Resumo" value={summary} onChange={setSummary} />
 
-      <label className="flex flex-col gap-1">
-        <span className="label-code text-content-muted">Legenda</span>
-        <textarea
-          value={caption}
-          onChange={(event) => setCaption(event.target.value)}
-          rows={10}
-          placeholder="A legenda que vai junto com a arte na publicação."
-          className="rounded bg-surface p-3 text-sm leading-relaxed outline-none placeholder:text-content-muted/60"
-        />
-        <span className="label-code text-right text-content-muted">
-          {caption.length}/2200 caracteres do Instagram
-        </span>
-      </label>
+      <TextArea
+        label="Legenda"
+        value={caption}
+        onChange={setCaption}
+        rows={10}
+        limite={LIMITE_LEGENDA}
+        placeholder="A legenda que vai junto com a arte na publicação."
+        hint="caracteres do Instagram"
+      />
 
-      <label className="flex flex-col gap-1">
-        <span className="label-code text-content-muted">Hashtags</span>
-        <textarea
-          value={hashtags}
-          onChange={(event) => setHashtags(event.target.value)}
-          rows={2}
-          placeholder="#JHComp #AssistenciaTecnica"
-          className="rounded bg-surface p-3 font-mono text-xs outline-none placeholder:text-content-muted/60"
-        />
-      </label>
+      <TextArea
+        label="Hashtags"
+        value={hashtags}
+        onChange={setHashtags}
+        rows={2}
+        mono
+        placeholder="#JHComp #AssistenciaTecnica"
+      />
 
-      <Campo label="Chamada para ação" valor={ctaLabel} aoMudar={setCtaLabel} />
+      <Field label="Chamada para ação" value={ctaLabel} onChange={setCtaLabel} />
 
       {erro && <p className="text-sm text-brand-soft">{erro}</p>}
 
       <div className="flex items-center gap-2">
-        <button type="button" className="btn-primary" onClick={salvar} disabled={salvando || !mudou}>
-          <Check size={12} />
+        <Button variant="primary" onClick={salvar} busy={salvando} disabled={!mudou} icon={<Check size={12} />}>
           {salvando ? 'Salvando…' : 'Salvar alterações'}
-        </button>
-        <button type="button" className="btn-ghost" onClick={onCancel} disabled={salvando}>
-          <X size={12} />
+        </Button>
+        <Button onClick={onCancel} disabled={salvando} icon={<X size={12} />}>
           Cancelar
-        </button>
-        {mudou && !salvando && (
-          <span className="label-code text-content-muted">alterações não salvas</span>
-        )}
+        </Button>
+        {mudou && !salvando && <span className="label-code text-content-muted">alterações não salvas</span>}
       </div>
     </div>
-  );
-}
-
-function Campo({ label, valor, aoMudar }: { label: string; valor: string; aoMudar: (v: string) => void }) {
-  return (
-    <label className="flex flex-col gap-1">
-      <span className="label-code text-content-muted">{label}</span>
-      <input
-        value={valor}
-        onChange={(event) => aoMudar(event.target.value)}
-        className="rounded bg-surface px-3 py-2 text-sm outline-none"
-      />
-    </label>
   );
 }
