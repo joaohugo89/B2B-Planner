@@ -13,7 +13,7 @@ import { describeError } from '../api/client';
 import { PublicacaoEditor } from '../components/PublicacaoEditor';
 import { useApi } from '../api/useApi';
 import { useAuth } from '../auth/AuthContext';
-import { EmptyState, ErrorState, LoadingState, PageHeader, StatusTag } from '../components/primitives';
+import { copiarTexto, EmptyState, ErrorState, LoadingState, PageHeader, StatusTag } from '../components/primitives';
 import { ToneManager } from '../components/ToneManager';
 import type { CopyEntry, Post } from '../types/api';
 
@@ -348,7 +348,7 @@ function CopyCard({
             type="button"
             className="btn-primary"
             onClick={async () => {
-              await navigator.clipboard.writeText([entry.body, allTags].filter(Boolean).join('\n\n'));
+              if (!(await copiarTexto([entry.body, allTags].filter(Boolean).join('\n\n')))) return;
               setCopied(true);
               setTimeout(() => setCopied(false), 2000);
             }}

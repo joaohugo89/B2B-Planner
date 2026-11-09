@@ -2,7 +2,7 @@ import { useState } from 'react';
 import { Link2, Download } from 'lucide-react';
 import { assetsApi } from '../api/services';
 import { useApi } from '../api/useApi';
-import { EmptyState, ErrorState, LoadingState, PageHeader } from '../components/primitives';
+import { copiarTexto, EmptyState, ErrorState, LoadingState, PageHeader } from '../components/primitives';
 import { AssetUploadForm } from '../components/AssetUploadForm';
 import { useAuth } from '../auth/AuthContext';
 import type { AssetKind } from '../types/api';
@@ -80,7 +80,7 @@ export function TemplateExportPage() {
                   style={{ aspectRatio: asset.ratio === 'RATIO_1_1' ? '1/1' : '4/5' }}
                 >
                   {asset.previewUrl ? (
-                    <img src={assetUrl(asset.previewUrl)} alt={asset.name} className="h-full w-full object-cover" />
+                    <img src={assetUrl(asset.previewUrl)} alt={asset.name} className="h-full w-full object-cover" loading="lazy" decoding="async" />
                   ) : (
                     <span className="font-display text-4xl text-brand-soft/25">JH</span>
                   )}
@@ -100,7 +100,8 @@ export function TemplateExportPage() {
                       type="button"
                       className="btn-ghost"
                       onClick={async () => {
-                        await navigator.clipboard.writeText(assetUrl(asset.downloadUrl) ?? asset.fileName ?? asset.code);
+                        const link = assetUrl(asset.downloadUrl) ?? asset.fileName ?? asset.code;
+                        if (!(await copiarTexto(link))) return;
                         setCopiedCode(asset.code);
                         setTimeout(() => setCopiedCode(null), 2000);
                       }}

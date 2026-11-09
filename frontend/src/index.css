@@ -3,6 +3,52 @@
 @tailwind utilities;
 
 @layer base {
+  /* Paleta escura (padrão). Os valores são canais R G B para o Tailwind poder
+     aplicar opacidade em cima deles. */
+  :root {
+    --background: 17 19 23;
+    --surface-lowest: 12 14 17;
+    --surface-low: 26 28 31;
+    --surface: 30 32 35;
+    --surface-high: 40 42 45;
+    --surface-highest: 51 53 56;
+    --surface-bright: 55 57 61;
+    --brand: 255 83 84;
+    --brand-soft: 255 179 174;
+    --brand-deep: 196 26 36;
+    --brand-laser: 230 46 56;
+    --brand-ink: 104 0 13;
+    --outline: 172 136 134;
+    --outline-variant: 92 64 62;
+    --content: 226 226 230;
+    --content-muted: 197 198 201;
+    --content-variant: 229 189 186;
+    color-scheme: dark;
+  }
+
+  /* Modo claro: mesma hierarquia de elevação, invertida. "lowest" continua sendo o
+     fundo recuado (cabeçalho, campos), "low" continua sendo o painel. */
+  html.light {
+    --background: 247 248 250;
+    --surface-lowest: 233 235 240;
+    --surface-low: 255 255 255;
+    --surface: 255 255 255;
+    --surface-high: 221 224 230;
+    --surface-highest: 204 209 217;
+    --surface-bright: 191 197 206;
+    --brand: 216 30 42;
+    --brand-soft: 168 19 32;
+    --brand-deep: 255 217 214;
+    --brand-laser: 196 26 36;
+    --brand-ink: 255 255 255;
+    --outline: 138 111 109;
+    --outline-variant: 216 196 194;
+    --content: 21 23 28;
+    --content-muted: 76 80 88;
+    --content-variant: 122 59 56;
+    color-scheme: light;
+  }
+
   html,
   body,
   #root {
@@ -11,6 +57,12 @@
 
   body {
     @apply bg-background font-body text-content antialiased;
+  }
+
+  /* Nenhum controle tinha foco visível: navegando por teclado não dava para saber
+     onde se estava. :focus-visible não aparece no clique do mouse. */
+  :focus-visible {
+    @apply outline-none ring-2 ring-brand ring-offset-2 ring-offset-background;
   }
 }
 
@@ -29,5 +81,14 @@
 
   .btn-ghost {
     @apply inline-flex items-center gap-2 rounded bg-surface-high px-3 py-1.5 font-mono text-[11px] uppercase tracking-wider text-content transition hover:bg-surface-highest;
+  }
+}
+
+@layer base {
+  /* No claro, painel e campo são os dois brancos: sem uma borda o campo some. */
+  html.light input:not([type='range']):not([type='checkbox']),
+  html.light textarea,
+  html.light select {
+    @apply border border-surface-high;
   }
 }

@@ -174,7 +174,7 @@ export function PhotoPicker({
                 }`}
               >
                 {photo.previewUrl ? (
-                  <img src={assetUrl(photo.previewUrl)} alt={photo.name} className="h-full w-full object-cover" />
+                  <img src={assetUrl(photo.previewUrl)} alt={photo.name} className="h-full w-full object-cover" loading="lazy" decoding="async" />
                 ) : (
                   <ImagePlus size={14} className="text-content-muted" />
                 )}

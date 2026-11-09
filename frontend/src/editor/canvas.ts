@@ -33,8 +33,16 @@ export function paletteFor(theme: 'DARK' | 'LIGHT'): Palette {
     : { text: BRAND.darkText, muted: BRAND.darkMuted, panel: BRAND.paper, accent: BRAND.redDeep, onAccent: '#ffffff' };
 }
 
+let fontesProntas: Promise<void> | null = null;
+
 /** Garante que as fontes da marca estejam prontas antes de desenhar. */
-export async function ensureFonts(): Promise<void> {
+export function ensureFonts(): Promise<void> {
+  // Carregar fonte é uma vez por aba; sem isto cada tecla esperava document.fonts.ready.
+  fontesProntas ??= carregarFontes();
+  return fontesProntas;
+}
+
+async function carregarFontes(): Promise<void> {
   if (!('fonts' in document)) return;
   const faces = [
     '800 72px Syne',
@@ -46,7 +54,25 @@ export async function ensureFonts(): Promise<void> {
   await document.fonts.ready;
 }
 
+/**
+ * Imagens já decodificadas, por URL. O editor redesenha a prévia a cada tecla e a cada
+ * pixel de arrasto: sem este cache, o mesmo template e a mesma foto eram baixados e
+ * decodificados do zero em todo redesenho — é daí que vinha a lentidão da tela.
+ */
+const imagens = new Map<string, Promise<HTMLImageElement>>();
+
 export function loadImage(src: string): Promise<HTMLImageElement> {
+  const emCache = imagens.get(src);
+  if (emCache) return emCache;
+
+  const pendente = carregarImagem(src);
+  imagens.set(src, pendente);
+  // Erro não fica guardado: a próxima tentativa (rede de volta) precisa poder funcionar.
+  pendente.catch(() => imagens.delete(src));
+  return pendente;
+}
+
+function carregarImagem(src: string): Promise<HTMLImageElement> {
   return new Promise((resolve, reject) => {
     const image = new Image();
     // assetUrl: com a API em outro domínio, o caminho relativo do asset sairia do host do frontend.

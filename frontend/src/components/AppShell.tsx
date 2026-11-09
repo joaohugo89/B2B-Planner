@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 import { NavLink, Outlet, useLocation } from 'react-router-dom';
-import { Activity, Menu, X } from 'lucide-react';
+import { Activity, Menu, Moon, Sun, X } from 'lucide-react';
 import { AuthControl } from './AuthControl';
 import { useAuth } from '../auth/AuthContext';
 
@@ -18,8 +18,30 @@ const NAV = [
   { to: '/instagram', label: 'Instagram', end: false, publico: false },
 ];
 
+/**
+ * Claro/escuro. O tema já foi aplicado pelo script do index.html antes da primeira
+ * pintura; aqui só lemos o estado atual e invertemos.
+ */
+function useTema() {
+  const [claro, setClaro] = useState(() => document.documentElement.classList.contains('light'));
+
+  function alternar() {
+    const proximo = !claro;
+    document.documentElement.classList.toggle('light', proximo);
+    try {
+      localStorage.setItem('jh-tema', proximo ? 'light' : 'dark');
+    } catch {
+      // Navegação privada bloqueia o storage: o tema vale só para esta sessão.
+    }
+    setClaro(proximo);
+  }
+
+  return { claro, alternar };
+}
+
 export function AppShell() {
   const { session } = useAuth();
+  const tema = useTema();
   const [menuAberto, setMenuAberto] = useState(false);
   const { pathname } = useLocation();
 
@@ -68,6 +90,15 @@ export function AppShell() {
               <Activity size={12} className="text-brand animate-pulse" />
               <span className="label-code text-content-variant">SYSTEM LIVE // IG-HUB</span>
             </div>
+            <button
+              type="button"
+              onClick={tema.alternar}
+              aria-label={tema.claro ? 'Usar modo escuro' : 'Usar modo claro'}
+              title={tema.claro ? 'Modo escuro' : 'Modo claro'}
+              className="flex h-9 w-9 items-center justify-center rounded border border-outline-variant bg-surface text-content-variant transition-colors hover:text-content"
+            >
+              {tema.claro ? <Moon size={16} /> : <Sun size={16} />}
+            </button>
             <AuthControl />
 
             {/* Sem isto, em tela estreita não há como sair da primeira tela. */}

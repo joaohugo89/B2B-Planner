@@ -7,7 +7,7 @@ import { useApi } from '../api/useApi';
 import { useAuth } from '../auth/AuthContext';
 import { PublicacaoEditor } from '../components/PublicacaoEditor';
 import { CarrosselPost } from '../components/CarrosselPost';
-import { EmptyState, ErrorState, LoadingState, PageHeader, StatusTag } from '../components/primitives';
+import { copiarTexto, EmptyState, ErrorState, LoadingState, PageHeader, StatusTag } from '../components/primitives';
 import type { Audience, Post, PostStatus } from '../types/api';
 
 const AUDIENCE_LABEL: Record<Audience, string> = {
@@ -251,7 +251,7 @@ function PostInspector({ code, onDeleted }: { code: string; onDeleted: () => voi
               type="button"
               className="btn-ghost"
               onClick={async () => {
-                await navigator.clipboard.writeText(caption);
+                if (!(await copiarTexto(caption))) return;
                 setCopied(true);
                 setTimeout(() => setCopied(false), 2000);
               }}

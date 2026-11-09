@@ -3,7 +3,7 @@ import { Copy, Layers, Image as ImageIcon, CalendarDays, Instagram } from 'lucid
 import { postsApi } from '../api/services';
 import { useApi } from '../api/useApi';
 import { useAuth } from '../auth/AuthContext';
-import { EmptyState, ErrorState, LoadingState, MetricCard, PageHeader, StatusTag } from '../components/primitives';
+import { copiarTexto, EmptyState, ErrorState, LoadingState, MetricCard, PageHeader, StatusTag } from '../components/primitives';
 import { InstagramPreview } from '../components/InstagramPreview';
 import type { Audience, Post } from '../types/api';
 import { assetUrl } from '../api/assetUrl';
@@ -35,7 +35,7 @@ function PostCard({ post, ratio }: { post: Post; ratio: '4/5' | '1/1' }) {
 
   async function copyCaption() {
     const text = [post.caption, post.hashtags].filter(Boolean).join('\n\n') || post.summary || post.title;
-    await navigator.clipboard.writeText(text);
+    if (!(await copiarTexto(text))) return;
     setCopied(true);
     setTimeout(() => setCopied(false), 2000);
   }
@@ -47,7 +47,7 @@ function PostCard({ post, ratio }: { post: Post; ratio: '4/5' | '1/1' }) {
         style={{ aspectRatio: ratio }}
       >
         {post.coverImageUrl ? (
-          <img src={assetUrl(post.coverImageUrl)} alt={post.title} className="h-full w-full object-cover" />
+          <img src={assetUrl(post.coverImageUrl)} alt={post.title} className="h-full w-full object-cover" loading="lazy" decoding="async" />
         ) : (
           <div className="flex h-full w-full items-center justify-center bg-[radial-gradient(circle_at_30%_20%,rgba(255,83,84,0.25),transparent_60%)]">
             <span className="font-display text-5xl text-brand-soft/30">JH</span>

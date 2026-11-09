@@ -10,6 +10,14 @@
       rel="stylesheet"
     />
     <title>JH.COMP Engineering System</title>
+    <script>
+      // Aplica o tema antes da primeira pintura; em React a tela já viria branca piscando.
+      try {
+        var salvo = localStorage.getItem('jh-tema');
+        var claro = salvo ? salvo === 'light' : window.matchMedia('(prefers-color-scheme: light)').matches;
+        document.documentElement.classList.toggle('light', claro);
+      } catch (e) {}
+    </script>
   </head>
   <body>
     <div id="root"></div>

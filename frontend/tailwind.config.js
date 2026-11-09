@@ -1,35 +1,40 @@
 /** @type {import('tailwindcss').Config} */
+
+// Os tons vivem em variáveis CSS (ver index.css) para o modo claro trocar a paleta
+// inteira sem mexer em nenhuma classe. O formato "R G B" é o que o Tailwind precisa
+// para continuar aceitando opacidade (bg-surface/50).
+const token = (name) => `rgb(var(--${name}) / <alpha-value>)`;
+
 export default {
   darkMode: 'class',
   content: ['./index.html', './src/**/*.{ts,tsx}'],
   theme: {
     extend: {
       colors: {
-        // Tokens da identidade JH.COMP (carvão / grafite / vermelho industrial)
-        background: '#111317',
+        background: token('background'),
         surface: {
-          lowest: '#0c0e11',
-          low: '#1a1c1f',
-          DEFAULT: '#1e2023',
-          high: '#282a2d',
-          highest: '#333538',
-          bright: '#37393d',
+          lowest: token('surface-lowest'),
+          low: token('surface-low'),
+          DEFAULT: token('surface'),
+          high: token('surface-high'),
+          highest: token('surface-highest'),
+          bright: token('surface-bright'),
         },
         brand: {
-          DEFAULT: '#ff5354',
-          soft: '#ffb3ae',
-          deep: '#c41a24',
-          laser: '#e62e38',
-          ink: '#68000d',
+          DEFAULT: token('brand'),
+          soft: token('brand-soft'),
+          deep: token('brand-deep'),
+          laser: token('brand-laser'),
+          ink: token('brand-ink'),
         },
         outline: {
-          DEFAULT: '#ac8886',
-          variant: '#5c403e',
+          DEFAULT: token('outline'),
+          variant: token('outline-variant'),
         },
         content: {
-          DEFAULT: '#e2e2e6',
-          muted: '#c5c6c9',
-          variant: '#e5bdba',
+          DEFAULT: token('content'),
+          muted: token('content-muted'),
+          variant: token('content-variant'),
         },
       },
       fontFamily: {
@@ -43,7 +48,7 @@ export default {
         xl: '0.5rem',
       },
       boxShadow: {
-        glow: '0 0 12px rgba(255, 83, 84, 0.45)',
+        glow: '0 0 12px rgb(var(--brand) / 0.45)',
       },
     },
   },

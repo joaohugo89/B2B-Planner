@@ -56,7 +56,7 @@ export function DraftsPanel({
         <article key={post.id} className="panel flex items-center gap-3 p-3">
           <div className="h-20 w-16 shrink-0 overflow-hidden rounded bg-surface-high">
             {post.coverImageUrl ? (
-              <img src={assetUrl(post.coverImageUrl)} alt={`Rascunho ${post.code}`} className="h-full w-full object-cover" />
+              <img src={assetUrl(post.coverImageUrl)} alt={`Rascunho ${post.code}`} className="h-full w-full object-cover" loading="lazy" decoding="async" />
             ) : (
               <div className="flex h-full w-full items-center justify-center font-display text-brand-soft/40">JH</div>
             )}

@@ -10,7 +10,9 @@ export function PageHeader({ eyebrow, title, description, actions }: {
 }) {
   return (
     <section className="border-b border-surface-high bg-surface-lowest">
-      <div className="mx-auto flex max-w-7xl flex-col gap-4 px-4 py-10 md:flex-row md:items-end md:justify-between md:px-8">
+      {/* py-6: numa ferramenta densa, 40px a mais de respiro no topo empurrava o trabalho
+          para fora da primeira dobra em todas as telas. */}
+      <div className="mx-auto flex max-w-7xl flex-col gap-4 px-4 py-6 md:flex-row md:items-end md:justify-between md:px-8">
         <div className="flex max-w-2xl flex-col gap-2">
           <div className="flex items-center gap-2">
             <span className="h-2.5 w-2.5 rounded-full bg-brand shadow-glow" />
@@ -85,4 +87,38 @@ export function ErrorState({ message, onRetry }: { message: string; onRetry?: ()
 
 export function EmptyState({ message }: { message: string }) {
   return <div className="panel p-6 text-sm text-content-muted">{message}</div>;
+}
+
+/**
+ * Copia texto e diz se conseguiu. navigator.clipboard só existe em HTTPS ou
+ * localhost: abrindo o planner pelo IP da rede ele é undefined e os botões falhavam calados. O
+ * execCommand é obsoleto, mas é o único caminho que funciona em contexto inseguro.
+ */
+export async function copiarTexto(texto: string): Promise<boolean> {
+  try {
+    if (navigator.clipboard?.writeText) {
+      await navigator.clipboard.writeText(texto);
+      return true;
+    }
+  } catch {
+    // Permissão negada ou contexto inseguro: cai no plano B.
+  }
+
+  try {
+    const campo = document.createElement('textarea');
+    campo.value = texto;
+    // Fora da tela, mas precisa estar no documento e focável para o execCommand ver a seleção.
+    campo.setAttribute('readonly', '');
+    campo.style.cssText = 'position:fixed;top:-1000px;opacity:0';
+    document.body.appendChild(campo);
+    campo.select();
+    const copiou = document.execCommand('copy');
+    document.body.removeChild(campo);
+    if (copiou) return true;
+  } catch {
+    // Sem saída automática: resta mostrar o texto para o usuário copiar na mão.
+  }
+
+  window.prompt('Não foi possível copiar sozinho. Copie o texto abaixo:', texto);
+  return false;
 }

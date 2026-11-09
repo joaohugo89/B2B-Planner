@@ -262,19 +262,23 @@ export function PostStudioPage() {
     }
   }, [templates, spec.templateUrl, index]);
 
-  // Redesenha a prévia a cada mudança.
+  // Redesenha a prévia a cada mudança, no máximo uma vez por quadro: digitar e arrastar
+  // disparam dezenas de mudanças por segundo, e cada desenho é um canvas de 1080 px.
   useEffect(() => {
     let cancelled = false;
     const canvas = canvasRef.current;
     if (!canvas) return;
 
-    const { width, height } = canvasSize(spec.ratio);
-    canvas.width = width;
-    canvas.height = height;
-    const ctx = canvas.getContext('2d');
-    if (!ctx) return;
+    const quadro = requestAnimationFrame(async () => {
+      const { width, height } = canvasSize(spec.ratio);
+      // Atribuir width/height apaga e realoca o buffer: só quando a proporção muda.
+      if (canvas.width !== width || canvas.height !== height) {
+        canvas.width = width;
+        canvas.height = height;
+      }
+      const ctx = canvas.getContext('2d');
+      if (!ctx || cancelled) return;
 
-    (async () => {
       try {
         await ensureFonts();
         if (cancelled) return;
@@ -283,10 +287,11 @@ export function PostStudioPage() {
       } catch (err) {
         if (!cancelled) setRenderError(err instanceof Error ? err.message : 'Falha ao desenhar o post.');
       }
-    })();
+    });
 
     return () => {
       cancelled = true;
+      cancelAnimationFrame(quadro);
     };
   }, [spec]);
 
@@ -895,7 +900,7 @@ export function PostStudioPage() {
                   style={{ aspectRatio: asset.ratio === 'RATIO_1_1' ? '1/1' : '4/5' }}
                 >
                   {asset.previewUrl ? (
-                    <img src={assetUrl(asset.previewUrl)} alt={asset.code} className="h-full w-full object-cover" />
+                    <img src={assetUrl(asset.previewUrl)} alt={asset.code} className="h-full w-full object-cover" loading="lazy" decoding="async" />
                   ) : (
                     <ImageIcon size={16} className="text-content-muted" />
                   )}
