@@ -1,0 +1,45 @@
+#!/bin/sh
+#
+# Reconstrói as imagens locais sempre que você envia código ao GitHub.
+#
+# O Docker copia o código para dentro da imagem no momento do build e congela ali: um
+# "up -d" sem --build sobe a imagem antiga, e o que está no ar continua sendo o código de
+# antes. Este hook fecha essa distância — o que você publica é o que está rodando aqui.
+#
+# Ativado por `git config core.hooksPath scripts/git-hooks` (veja docs/DOCKER.md).
+# Para enviar sem reconstruir: git push --no-verify
+
+set -e
+
+RAIZ=$(git rev-parse --show-toplevel)
+cd "$RAIZ"
+
+if [ ! -f .env ]; then
+    echo "pre-push: sem .env, nada a reconstruir (push segue)."
+    exit 0
+fi
+
+if ! docker info >/dev/null 2>&1; then
+    echo "pre-push: Docker Desktop fechado, imagens não reconstruídas (push segue)."
+    exit 0
+fi
+
+ARQUIVOS="-f docker-compose.prod.yml -f docker-compose.local.yml"
+# O túnel do domínio só entra se o token estiver configurado.
+if grep -q '^CLOUDFLARE_TUNNEL_TOKEN=.\+' .env 2>/dev/null; then
+    ARQUIVOS="$ARQUIVOS -f docker-compose.dominio.yml"
+fi
+
+echo "pre-push: reconstruindo as imagens com o código deste push…"
+
+# O build roda os testes do backend e o tsc do frontend (está nos Dockerfiles): se o código
+# não compila, o push para aqui em vez de publicar algo quebrado.
+if ! docker compose $ARQUIVOS --env-file .env up -d --build; then
+    echo ""
+    echo "pre-push: o build falhou — push cancelado."
+    echo "          Corrija o erro acima, ou use 'git push --no-verify' para enviar assim mesmo."
+    exit 1
+fi
+
+echo "pre-push: imagens atualizadas e containers no ar."
+exit 0
