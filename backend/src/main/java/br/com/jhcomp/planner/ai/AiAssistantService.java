@@ -35,6 +35,9 @@ public class AiAssistantService {
     /** Serviços que o painel sabe configurar. */
     public static final List<String> PROVIDERS = List.of("anthropic", "openai");
 
+    /** Quantos posts do planner entram no contexto enviado ao modelo. */
+    private static final int POSTS_NO_CONTEXTO = 30;
+
     private final AiProperties properties;
     private final PostRepository posts;
     private final SettingsService settings;
@@ -186,9 +189,20 @@ public class AiAssistantService {
         return providers.get(provider());
     }
 
-    /** Contexto de marca + o que já está no planner, para o modelo não repetir temas. */
+    /**
+     * Contexto de marca + o que já está no planner, para o modelo não repetir temas.
+     *
+     * <p>Só os posts mais recentes entram. Esta lista vai junto em toda chamada — conversa,
+     * rascunho, lote — e cada linha dela é token pago; com o planner cheio, o contexto custaria
+     * mais que o próprio pedido sem ajudar a evitar repetição.</p>
+     */
     private String systemPrompt() {
-        String existing = posts.findAllByOrderByCodeAsc().stream()
+        List<Post> todos = posts.findAllByOrderByCodeAsc();
+        List<Post> recentes = todos.size() <= POSTS_NO_CONTEXTO
+                ? todos
+                : todos.subList(todos.size() - POSTS_NO_CONTEXTO, todos.size());
+
+        String existing = recentes.stream()
                 .map(this::describe)
                 .collect(Collectors.joining("\n"));
 

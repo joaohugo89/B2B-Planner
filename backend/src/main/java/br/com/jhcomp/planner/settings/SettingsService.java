@@ -7,7 +7,9 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
+import java.util.concurrent.ConcurrentHashMap;
 
 /**
  * Configurações que podem ser editadas pelo painel do usuário.
@@ -39,6 +41,18 @@ public class SettingsService {
     private final AppSettingRepository repository;
     private final CryptoService crypto;
 
+    /**
+     * Valor já lido do banco, por chave.
+     *
+     * <p>Uma chamada ao assistente lê seis configurações e uma do Instagram lê quatro — cada
+     * leitura era um SELECT, e as sensíveis ainda pagavam a decifragem. São dados que mudam
+     * quando alguém salva o painel, então o cache é limpo ali e em nenhum outro lugar.</p>
+     *
+     * <p>Vale para esta instância. Com mais de um processo atendendo o mesmo banco, o painel de
+     * um não enxergaria na hora o que foi salvo no outro.</p>
+     */
+    private final Map<String, Optional<String>> cache = new ConcurrentHashMap<>();
+
     public SettingsService(AppSettingRepository repository, CryptoService crypto) {
         this.repository = repository;
         this.crypto = crypto;
@@ -60,6 +74,10 @@ public class SettingsService {
     }
 
     private Optional<String> read(String key) {
+        return cache.computeIfAbsent(key, this::buscar);
+    }
+
+    private Optional<String> buscar(String key) {
         return repository.findById(key)
                 .map(AppSetting::getValue)
                 .filter(value -> !value.isBlank())
@@ -87,6 +105,7 @@ public class SettingsService {
         if (value == null) {
             return;
         }
+        cache.remove(key);
         String trimmed = value.trim();
         if (trimmed.isEmpty()) {
             repository.deleteById(key);
@@ -96,5 +115,7 @@ public class SettingsService {
         AppSetting setting = repository.findById(key).orElseGet(() -> new AppSetting(key, stored));
         setting.setValue(stored);
         repository.save(setting);
+        // De novo: uma leitura entre a limpeza e a gravação teria recolocado o valor antigo.
+        cache.remove(key);
     }
 }
