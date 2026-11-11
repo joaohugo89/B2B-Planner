@@ -380,7 +380,23 @@ export interface VideoProject {
 
 type VideoProjectInput = { title: string; script: string | null; postId: number | null };
 
+/** configurado=false: a instalação roda os motores no próprio backend e não há o que ligar. */
+interface MotoresStatus {
+  configurado: boolean;
+  noAr: boolean;
+  ligado: boolean;
+}
+
 export const videoApi = {
+  /** Os motores do Windows: se o servidor responde e se está ligado. */
+  async motores() {
+    const { data } = await api.get<MotoresStatus>('/video/motores');
+    return data;
+  },
+  async ligarMotores(ligado: boolean) {
+    const { data } = await api.put<MotoresStatus>('/video/motores', { ligado });
+    return data;
+  },
   /** Quais etapas têm motor instalado no servidor. */
   async engines() {
     const { data } = await api.get<Record<VideoStep, boolean>>('/video/engines');

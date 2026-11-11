@@ -2,6 +2,8 @@ package br.com.jhcomp.planner.video;
 
 import br.com.jhcomp.planner.video.VideoDtos.JobRequest;
 import br.com.jhcomp.planner.video.VideoDtos.JobResponse;
+import br.com.jhcomp.planner.video.VideoDtos.MotoresRequest;
+import br.com.jhcomp.planner.video.VideoDtos.MotoresResponse;
 import br.com.jhcomp.planner.video.VideoDtos.ProjectRequest;
 import br.com.jhcomp.planner.video.VideoDtos.ProjectResponse;
 import br.com.jhcomp.planner.video.VideoDtos.ScriptRequest;
@@ -42,10 +44,35 @@ public class VideoController {
 
     private final VideoService service;
     private final VideoPipeline pipeline;
+    private final RemoteEngines remote;
 
-    public VideoController(VideoService service, VideoPipeline pipeline) {
+    public VideoController(VideoService service, VideoPipeline pipeline, RemoteEngines remote) {
         this.service = service;
         this.pipeline = pipeline;
+        this.remote = remote;
+    }
+
+    @GetMapping("/motores")
+    public MotoresResponse motores() {
+        if (!remote.configured()) {
+            return new MotoresResponse(false, false, false);
+        }
+        RemoteEngines.Estado estado = remote.estado();
+        return new MotoresResponse(true, estado.noAr(), estado.ligado());
+    }
+
+    /** O botão "ligar/desligar motores" do Video Studio. */
+    @PutMapping("/motores")
+    public MotoresResponse ligarMotores(@Valid @RequestBody MotoresRequest request) {
+        if (!remote.configured()) {
+            throw new IllegalArgumentException("Esta instalação roda os motores no próprio backend.");
+        }
+        try {
+            remote.ligar(request.ligado());
+        } catch (EngineRunner.EngineException ex) {
+            throw new IllegalArgumentException(ex.getMessage());
+        }
+        return motores();
     }
 
     @GetMapping("/engines")

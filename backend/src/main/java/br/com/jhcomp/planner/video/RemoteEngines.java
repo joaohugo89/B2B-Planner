@@ -63,13 +63,33 @@ public class RemoteEngines {
         return !properties.getEngineUrl().isBlank();
     }
 
+    /** noAr: o servidor responde. ligado: aceita trabalho (o botão do site não o desligou). */
+    public record Estado(boolean noAr, boolean ligado) {
+    }
+
+    public Estado estado() {
+        try {
+            return new Estado(true, enviar(pedido("/saude").GET().timeout(Duration.ofSeconds(3)).build())
+                    .path("ativo").asBoolean(true));
+        } catch (EngineException desligado) {
+            return new Estado(false, false);
+        }
+    }
+
+    /** O botão do site. Com o servidor fora do ar, não há o que ligar: a tela explica. */
+    public Estado ligar(boolean ligado) {
+        enviar(pedido("/ativo?valor=" + ligado).POST(HttpRequest.BodyPublishers.noBody()).build());
+        return estado();
+    }
+
     /** Etapas com motor no Windows agora; tudo falso quando o servidor está desligado. */
     public Map<Step, Boolean> available() {
         Map<Step, Boolean> etapas = new EnumMap<>(Step.class);
         ETAPAS.forEach(etapa -> etapas.put(etapa, false));
         try {
             JsonNode saude = enviar(pedido("/saude").GET().timeout(Duration.ofSeconds(3)).build());
-            ETAPAS.forEach(etapa -> etapas.put(etapa, saude.path(etapa.name()).asBoolean(false)));
+            boolean ativo = saude.path("ativo").asBoolean(true);
+            ETAPAS.forEach(etapa -> etapas.put(etapa, ativo && saude.path(etapa.name()).asBoolean(false)));
         } catch (EngineException ignorado) {
             // Desligado ou chave errada: a tela mostra as etapas como indisponíveis.
         }

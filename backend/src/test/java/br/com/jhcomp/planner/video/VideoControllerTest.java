@@ -25,6 +25,7 @@ import static org.mockito.Mockito.verifyNoInteractions;
 import static org.mockito.Mockito.when;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.put;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
@@ -50,6 +51,9 @@ class VideoControllerTest {
     private VideoPipeline pipeline;
 
     @MockitoBean
+    private RemoteEngines remote;
+
+    @MockitoBean
     private AppUserRepository users;
 
     @BeforeEach
@@ -69,11 +73,15 @@ class VideoControllerTest {
         mockMvc.perform(get("/api/video/projects")).andExpect(status().isUnauthorized());
         mockMvc.perform(get("/api/video/projects/1/files/FINAL")).andExpect(status().isUnauthorized());
         mockMvc.perform(get("/api/video/engines")).andExpect(status().isUnauthorized());
+        mockMvc.perform(get("/api/video/motores")).andExpect(status().isUnauthorized());
+        mockMvc.perform(put("/api/video/motores")
+                        .contentType(MediaType.APPLICATION_JSON).content("{\"ligado\":true}"))
+                .andExpect(status().isUnauthorized());
         mockMvc.perform(post("/api/video/projects/1/jobs")
                         .contentType(MediaType.APPLICATION_JSON).content("{\"step\":\"RENDER\"}"))
                 .andExpect(status().isUnauthorized());
 
-        verifyNoInteractions(service, pipeline);
+        verifyNoInteractions(service, pipeline, remote);
     }
 
     @Test

@@ -203,12 +203,23 @@ Docker, que o backend chama por HTTP:
 | Banco, backend, frontend (localhost:8090) e túnel do domínio | Docker | Sempre (sobem sozinhos com o Docker Desktop) |
 | Servidor de motores (porta 8095, só desta máquina) | Windows | Só para gerar voz, sincronia e legendas |
 
+Parado, o servidor quase não custa nada — cada motor é um processo que nasce no pedido e
+devolve a placa de vídeo ao terminar —, então ele fica sempre rodando, escondido:
+
 ```powershell
-.\scripts\motores.ps1
+.\scripts\motores.ps1 -IniciarAoEntrar      # liga sozinho ao entrar no Windows (uma vez só)
+.\scripts\motores.ps1 -Oculto               # liga agora, sem janela
+.\scripts\motores.ps1 -NaoIniciarAoEntrar   # desfaz o primeiro
 ```
 
-Com ele desligado, o planner e o site funcionam normalmente; no Video Studio, só essas três
-etapas ficam indisponíveis — o render continua, porque o FFmpeg está na imagem do backend.
+Ligar e desligar no dia a dia é o botão **Motores de IA** do Video Studio: desligado, o
+servidor recusa trabalho novo, mas continua de pé para receber o "ligar" de volta. Se ele
+não estiver rodando (por exemplo, logo depois de instalar), a tela avisa e manda rodar o
+script — o site não consegue iniciar programas no Windows. A saída fica em
+`backend\logs\motores.log`.
+
+Com os motores desligados, o planner e o site funcionam normalmente; no Video Studio, só
+essas três etapas ficam indisponíveis — o render continua, porque o FFmpeg está na imagem.
 
 Os dois lados usam a mesma pasta: no modo local, os uploads do backend ficam em
 `backend\uploads` (e não num volume interno do Docker), e o servidor de motores lê e grava em

@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { Captions, Clapperboard, Download, FileAudio, Film, History, Play, Plus, Sparkles, Trash2, UserRound, X } from 'lucide-react';
+import { Captions, Clapperboard, Cpu, Download, FileAudio, Film, History, Play, Plus, Power, Sparkles, Trash2, UserRound, X } from 'lucide-react';
 import { useSearchParams } from 'react-router-dom';
 import { postsApi, videoApi, type VideoJob, type VideoProject, type VideoStep } from '../api/services';
 import { describeError } from '../api/client';
@@ -231,6 +231,8 @@ function Projeto({ id, onListChanged, onDeleted }: { id: number; onListChanged: 
             </Button>
           }
         >
+          <MotoresDoWindows travado={travado} onMudou={motores.reload} />
+
           <ul className="flex flex-col gap-2">
             {ETAPAS.map((etapa) => {
               const disponivel = motores.data?.[etapa.step] ?? false;
@@ -340,6 +342,69 @@ function Barra({ job }: { job: VideoJob }) {
       <span className="label-code w-20 text-right text-brand-soft">
         {job.progress}% · {duracao(job)}
       </span>
+    </div>
+  );
+}
+
+/**
+ * Liga e desliga os motores de IA do Windows pelo site.
+ *
+ * <p>O botão não abre programa nenhum: o servidor de motores já roda escondido desde que você
+ * entrou no Windows, e só passa a aceitar ou a recusar trabalho. Se ele não estiver no ar,
+ * não há o que ligar daqui — a tela diz o que fazer.</p>
+ */
+function MotoresDoWindows({ travado, onMudou }: { travado: boolean; onMudou: () => void }) {
+  const estado = useApi(() => videoApi.motores(), []);
+  const [mudando, setMudando] = useState(false);
+  const [erro, setErro] = useState<string | null>(null);
+
+  if (!estado.data?.configurado) return null;
+  const { noAr, ligado } = estado.data;
+
+  async function alternar() {
+    setMudando(true);
+    setErro(null);
+    try {
+      estado.setData(await videoApi.ligarMotores(!ligado));
+      onMudou();
+    } catch (err) {
+      setErro(describeError(err));
+    } finally {
+      setMudando(false);
+    }
+  }
+
+  return (
+    <div className="flex flex-wrap items-center gap-3 rounded border border-surface-high p-3">
+      <Cpu size={16} className={ligado ? 'text-brand' : 'text-content-muted'} />
+      <div className="flex min-w-0 flex-1 flex-col">
+        <span className="text-sm text-content">
+          Motores de IA: {!noAr ? 'fora do ar' : ligado ? 'ligados' : 'desligados'}
+        </span>
+        <span className="text-xs text-content-muted">
+          {!noAr
+            ? 'O servidor de motores não está rodando no Windows. Ele liga sozinho ao entrar no Windows; para ligar agora, rode scripts\\motores.ps1.'
+            : ligado
+              ? 'Voz, sincronia e legendas disponíveis. Parados, não ocupam a placa de vídeo.'
+              : 'Voz, sincronia e legendas pausadas. O render continua funcionando.'}
+        </span>
+        {erro && <span className="text-xs text-brand-soft">{erro}</span>}
+      </div>
+      {noAr ? (
+        <Button
+          variant={ligado ? 'ghost' : 'primary'}
+          disabled={travado}
+          busy={mudando}
+          icon={<Power size={12} />}
+          onClick={alternar}
+        >
+          {ligado ? 'Desligar' : 'Ligar motores'}
+        </Button>
+      ) : (
+        <Button busy={estado.loading} onClick={() => { estado.reload(); onMudou(); }}>
+          Verificar de novo
+        </Button>
+      )}
     </div>
   );
 }

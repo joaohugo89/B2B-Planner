@@ -42,7 +42,8 @@ import java.util.regex.Pattern;
  *   <li>{@code GET /saude} — etapas com motor configurado;</li>
  *   <li>{@code POST /jobs?etapa=VOZ&projeto=7&text=roteiro.txt&out=audio-….wav} — inicia;</li>
  *   <li>{@code GET /jobs/{id}} — estado, código de saída e o fim da saída do motor;</li>
- *   <li>{@code DELETE /jobs/{id}} — encerra o motor e os processos filhos.</li>
+ *   <li>{@code DELETE /jobs/{id}} — encerra o motor e os processos filhos;</li>
+ *   <li>{@code POST /ativo?valor=false} — desliga pelo site (true liga de novo).</li>
  * </ul>
  */
 public final class ServidorMotores {
@@ -66,6 +67,13 @@ public final class ServidorMotores {
 
     /** O último job: um só por vez, porque os motores dividem a mesma placa de vídeo. */
     private Job atual;
+
+    /**
+     * Desligado pelo botão do site: o processo continua de pé (sem ele não haveria quem
+     * recebesse o "ligar" de volta), mas recusa trabalho novo. Parado, quase não custa nada:
+     * cada motor é um processo que nasce no pedido e devolve a placa de vídeo ao terminar.
+     */
+    private volatile boolean ativo = true;
 
     public ServidorMotores(Path pasta, String chave, Map<String, String> modelos, Duration limite) {
         this.pasta = pasta.toAbsolutePath().normalize();
@@ -117,6 +125,9 @@ public final class ServidorMotores {
 
             if (metodo.equals("GET") && caminho.equals("/saude")) {
                 responder(troca, 200, saude());
+            } else if (metodo.equals("POST") && caminho.equals("/ativo")) {
+                ativo = !"false".equals(consulta(troca.getRequestURI().getRawQuery()).get("valor"));
+                responder(troca, 200, saude());
             } else if (metodo.equals("POST") && caminho.equals("/jobs")) {
                 iniciarJob(troca);
             } else if (metodo.equals("GET") && caminho.startsWith("/jobs/")) {
@@ -136,10 +147,9 @@ public final class ServidorMotores {
     }
 
     private String saude() {
-        StringBuilder json = new StringBuilder("{");
+        StringBuilder json = new StringBuilder("{\"ativo\":").append(ativo);
         for (String etapa : ETAPAS) {
-            json.append(json.length() > 1 ? "," : "").append('"').append(etapa).append("\":")
-                    .append(modelos.containsKey(etapa));
+            json.append(",\"").append(etapa).append("\":").append(modelos.containsKey(etapa));
         }
         return json.append('}').toString();
     }
@@ -149,6 +159,10 @@ public final class ServidorMotores {
         String etapa = parametros.remove("etapa");
         String projeto = parametros.remove("projeto");
 
+        if (!ativo) {
+            responder(troca, 409, erro("Os motores estão desligados. Ligue-os pelo Video Studio."));
+            return;
+        }
         String modelo = modelos.get(etapa);
         if (modelo == null) {
             throw new IllegalArgumentException("Esta máquina não tem motor de " + etapa + " configurado.");

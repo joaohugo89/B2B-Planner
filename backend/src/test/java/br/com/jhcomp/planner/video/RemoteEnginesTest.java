@@ -178,12 +178,29 @@ class RemoteEnginesTest {
     }
 
     @Test
+    @DisplayName("desligado pelo site: etapas indisponíveis e pedido recusado; ligado de novo, volta")
+    void ligaEDesliga() {
+        assertThat(remoto.estado()).isEqualTo(new RemoteEngines.Estado(true, true));
+
+        assertThat(remoto.ligar(false)).isEqualTo(new RemoteEngines.Estado(true, false));
+        assertThat(remoto.available().values()).containsOnly(false);
+        assertThatThrownBy(() -> rodar(Step.VOZ, Map.of("text", "roteiro.txt", "out", SAIDA), Duration.ofSeconds(5),
+                new AtomicReference<>(), new CopyOnWriteArrayList<>()))
+                .isInstanceOf(EngineException.class)
+                .hasMessageContaining("desligados");
+
+        assertThat(remoto.ligar(true)).isEqualTo(new RemoteEngines.Estado(true, true));
+        assertThat(remoto.available()).containsEntry(Step.VOZ, true);
+    }
+
+    @Test
     @DisplayName("chave errada e servidor desligado viram etapas indisponíveis, sem exceção na tela")
     void semAcesso() {
         assertThat(cliente("chave-errada-mas-comprida").available().values()).containsOnly(false);
 
         servidor.stop(0);
         assertThat(remoto.available().values()).containsOnly(false);
+        assertThat(remoto.estado()).isEqualTo(new RemoteEngines.Estado(false, false));
         assertThatThrownBy(() -> rodar(Step.VOZ, Map.of("text", "roteiro.txt", "out", SAIDA), Duration.ofSeconds(5),
                 new AtomicReference<>(), new CopyOnWriteArrayList<>()))
                 .isInstanceOf(EngineException.class)

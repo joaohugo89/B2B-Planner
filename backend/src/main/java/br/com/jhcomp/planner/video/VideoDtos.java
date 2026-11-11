@@ -25,6 +25,16 @@ public final class VideoDtos {
     public record JobRequest(@NotNull VideoJob.Step step) {
     }
 
+    /**
+     * Os motores do Windows vistos pela tela. configurado=false: esta instalação roda os
+     * motores no próprio backend, e não há o que ligar.
+     */
+    public record MotoresResponse(boolean configurado, boolean noAr, boolean ligado) {
+    }
+
+    public record MotoresRequest(@NotNull Boolean ligado) {
+    }
+
     /** @param progress 0 a 100 enquanto roda e o motor informa; null nos demais casos */
     public record JobResponse(Long id, VideoJob.Step step, VideoJob.State state, Integer progress,
                               String error, String log,
