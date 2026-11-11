@@ -1,23 +1,31 @@
 # 08 — Implantação e operação
 
-## Onde o backend roda
+## Onde cada peça roda
 
-| Modo | Render (FFmpeg) | Motores de GPU | Como subir |
-|---|---|---|---|
-| Docker | Sim — FFmpeg e uma fonte para as legendas estão na imagem | **Não** — um contêiner não inicia processo no host | `docker compose ... up -d --build` |
-| Modo vídeo (no Windows) | Sim, com FFmpeg no PATH | Sim, via `wsl ...` | `scripts\video-local.ps1` |
+O backend fica sempre no Docker. Voz, sincronia e legendas rodam no Windows, num servidor
+de motores (`scripts\motores.ps1`, porta 8095 só desta máquina) que o backend chama por HTTP
+em `http://host.docker.internal:8095`. É o adaptador HTTP previsto em 03.
 
-Nunca os dois ao mesmo tempo. No modo vídeo, o `docker-compose.video.yml` tira o backend do
-compose, e o frontend em contêiner (localhost:8090 e o domínio) passa a falar com o backend
-do Windows por `host.docker.internal`. Ver `docs/DOCKER.md`, seção "Modo vídeo".
+- O servidor de motores não tem regra de negócio nem banco: recebe "rode a etapa X do
+  projeto N com estes arquivos", executa o comando configurado para X e informa o andamento.
+  Fila, histórico, progresso e cancelamento continuam no backend.
+- Os arquivos não viajam pela rede: os uploads do backend são uma pasta do Windows
+  (`backend\uploads`, montada no contêiner), e o servidor lê e grava em `backend\uploads\video`.
+- O servidor só aceita os três motores configurados, nomes de arquivo no formato que o
+  backend gera e entradas que existem na pasta do projeto, e exige a chave `VIDEO_ENGINE_KEY`.
+- Um motor por vez (a GPU não comporta dois); um job passa de 2 h e é encerrado, mesmo que o
+  backend tenha sumido no meio.
+- Desligado, só essas três etapas ficam indisponíveis; o render (FFmpeg) está na imagem.
 
-Ter backend em contêiner **e** motores de GPU exige o adaptador HTTP descrito em 03 — não
-foi construído.
+Sem `VIDEO_ENGINE_URL`, o backend roda os motores ele mesmo, pelos comandos
+`VIDEO_*_COMMAND` — útil quando o backend roda fora do Docker.
 
 ## Configuração
 
 | Variável | Padrão | Para quê |
 |---|---|---|
+| `VIDEO_ENGINE_URL` | vazio | Servidor de motores; com o backend no Docker, `http://host.docker.internal:8095` |
+| `VIDEO_ENGINE_KEY` | vazio | Chave compartilhada com o servidor de motores (a mesma nos dois lados) |
 | `VIDEO_DIR` | `uploads/video` | Pasta dos projetos |
 | `FFMPEG_PATH` | `ffmpeg` | Executável do FFmpeg |
 | `VIDEO_STEP_TIMEOUT_MINUTES` | `60` | Tempo máximo de uma etapa |

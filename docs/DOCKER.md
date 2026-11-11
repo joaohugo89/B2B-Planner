@@ -192,33 +192,31 @@ Mexeu só no frontend? Troque o final por `--build frontend` e sobe mais rápido
 
 ---
 
-## Modo vídeo: o backend fora do contêiner
+## Motores do Video Studio (no Windows)
 
-O Video Studio chama motores de IA que rodam no Windows e no WSL — e um contêiner não
-consegue iniciar esses programas. Por isso, com os motores instalados, o backend roda no
-Windows e o resto continua no Docker:
+Voz, sincronia labial e legendas são programas que rodam no Windows e no WSL — e um
+contêiner não consegue iniciá-los. Por isso eles ficam num servidor pequeno, fora do
+Docker, que o backend chama por HTTP:
 
-| Peça | Onde roda |
-|---|---|
-| Banco (5440) | contêiner, como sempre |
-| Frontend (localhost:8090) e túnel do domínio | contêiner, apontando para `host.docker.internal:8081` |
-| Backend (8081) | **Windows**, preso a 127.0.0.1 — a rede local não o enxerga |
-
-Um backend só. É isso que o `docker-compose.video.yml` garante: ele tira o serviço
-`backend` do compose, porque dois backends no mesmo banco disputariam a porta e a fila de
-jobs de vídeo.
+| Peça | Onde roda | Precisa estar ligada? |
+|---|---|---|
+| Banco, backend, frontend (localhost:8090) e túnel do domínio | Docker | Sempre (sobem sozinhos com o Docker Desktop) |
+| Servidor de motores (porta 8095, só desta máquina) | Windows | Só para gerar voz, sincronia e legendas |
 
 ```powershell
-.\scripts\video-local.ps1
+.\scripts\motores.ps1
 ```
 
-O script marca `MODO_BACKEND=host` no `.env`, sobe os contêineres com o frontend já
-apontando para o Windows e inicia o backend na própria janela — fechá-la para o backend.
-O hook de `pre-push` lê a mesma marca e não ressuscita o backend em contêiner; depois de
-um push, rode o script de novo para o backend pegar o código novo.
+Com ele desligado, o planner e o site funcionam normalmente; no Video Studio, só essas três
+etapas ficam indisponíveis — o render continua, porque o FFmpeg está na imagem do backend.
 
-Para voltar ao backend em contêiner: apague a linha `MODO_BACKEND=host` do `.env` e rode o
-`up -d --build` da seção "Suba".
+Os dois lados usam a mesma pasta: no modo local, os uploads do backend ficam em
+`backend\uploads` (e não num volume interno do Docker), e o servidor de motores lê e grava em
+`backend\uploads\video`. Pela rede só passam os nomes dos arquivos.
+
+A chave `VIDEO_ENGINE_KEY` do `.env` é a mesma dos dois lados; sem ela, o servidor recusa
+qualquer pedido. `VIDEO_ENGINE_URL` diz ao backend onde ele está:
+`http://host.docker.internal:8095`.
 
 ## Endereço fixo (planner.seu-dominio.com)
 

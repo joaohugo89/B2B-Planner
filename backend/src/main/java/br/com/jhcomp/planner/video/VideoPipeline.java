@@ -34,11 +34,12 @@ public class VideoPipeline {
     private final VideoJobStore store;
     private final VideoStorage storage;
     private final EngineRunner runner;
+    private final RemoteEngines remote;
     private final VideoProperties properties;
     private final Executor executor;
 
-    /** Processos em execução, para o cancelamento alcançá-los. */
-    private final Map<Long, Process> running = new ConcurrentHashMap<>();
+    /** Como interromper cada motor em execução: matar o processo ou pedir ao servidor. */
+    private final Map<Long, Runnable> running = new ConcurrentHashMap<>();
     private final Set<Long> cancelled = ConcurrentHashMap.newKeySet();
     /** Porcentagem dos jobs em execução. Só em memória: ao terminar, o estado do job basta. */
     private final Map<Long, Integer> progress = new ConcurrentHashMap<>();
@@ -49,25 +50,34 @@ public class VideoPipeline {
      */
     private final Set<Long> producing = ConcurrentHashMap.newKeySet();
 
-    public VideoPipeline(VideoJobStore store, VideoStorage storage, EngineRunner runner,
+    public VideoPipeline(VideoJobStore store, VideoStorage storage, EngineRunner runner, RemoteEngines remote,
                          VideoProperties properties, @Qualifier("videoJobExecutor") Executor executor) {
         this.store = store;
         this.storage = storage;
         this.runner = runner;
+        this.remote = remote;
         this.properties = properties;
         this.executor = executor;
     }
 
-    /** O que uma etapa vai rodar e o arquivo que deve sair dela. */
-    private record Plan(List<String> command, VideoFile produces, String output) {
+    /**
+     * O que uma etapa vai rodar e o arquivo que deve sair dela. Com command nulo, a etapa vai
+     * para o servidor de motores com os nomes de arquivo em values.
+     */
+    private record Plan(List<String> command, Map<String, String> values, VideoFile produces, String output) {
     }
 
-    /** Quais etapas têm motor nesta instalação; a tela esconde o botão das que não têm. */
+    /** Quais etapas têm motor agora; a tela desliga o botão das que não têm. */
     public Map<Step, Boolean> engines() {
         Map<Step, Boolean> engines = new EnumMap<>(Step.class);
-        engines.put(Step.VOZ, !properties.getVoiceCommand().isBlank());
-        engines.put(Step.LIPSYNC, !properties.getLipsyncCommand().isBlank());
-        engines.put(Step.LEGENDAS, !properties.getTranscribeCommand().isBlank());
+        if (remote.configured()) {
+            engines.putAll(remote.available());
+        } else {
+            engines.put(Step.VOZ, !properties.getVoiceCommand().isBlank());
+            engines.put(Step.LIPSYNC, !properties.getLipsyncCommand().isBlank());
+            engines.put(Step.LEGENDAS, !properties.getTranscribeCommand().isBlank());
+        }
+        // O render é FFmpeg, que está na própria imagem: nunca depende do Windows.
         engines.put(Step.RENDER, runner.responds(properties.getFfmpeg(), "-version"));
         return engines;
     }
@@ -94,24 +104,20 @@ public class VideoPipeline {
         // Marcado antes de enfileirar: um primeiro passo rápido não pode terminar sem ver a marca.
         producing.add(projectId);
         try {
-            return submit(projectId, sequence(properties).get(0));
+            return submit(projectId, sequence(engines()).get(0));
         } catch (RuntimeException ex) {
             producing.remove(projectId);
             throw ex;
         }
     }
 
-    /** As etapas configuradas, na ordem de produção. O render fecha sempre. */
-    static List<Step> sequence(VideoProperties properties) {
+    /** As etapas com motor disponível, na ordem de produção. O render fecha sempre. */
+    static List<Step> sequence(Map<Step, Boolean> engines) {
         List<Step> etapas = new ArrayList<>();
-        if (!properties.getVoiceCommand().isBlank()) {
-            etapas.add(Step.VOZ);
-        }
-        if (!properties.getLipsyncCommand().isBlank()) {
-            etapas.add(Step.LIPSYNC);
-        }
-        if (!properties.getTranscribeCommand().isBlank()) {
-            etapas.add(Step.LEGENDAS);
+        for (Step etapa : List.of(Step.VOZ, Step.LIPSYNC, Step.LEGENDAS)) {
+            if (Boolean.TRUE.equals(engines.get(etapa))) {
+                etapas.add(etapa);
+            }
         }
         etapas.add(Step.RENDER);
         return etapas;
@@ -121,7 +127,7 @@ public class VideoPipeline {
         if (!producing.contains(projectId)) {
             return;
         }
-        List<Step> etapas = sequence(properties);
+        List<Step> etapas = sequence(engines());
         int proxima = etapas.indexOf(done) + 1;
         if (proxima == 0 || proxima >= etapas.size()) {
             producing.remove(projectId);
@@ -141,9 +147,9 @@ public class VideoPipeline {
         }
         if (store.job(jobId).getState() == State.EXECUTANDO) {
             cancelled.add(jobId);
-            Process process = running.get(jobId);
-            if (process != null) {
-                EngineRunner.kill(process);
+            Runnable parar = running.get(jobId);
+            if (parar != null) {
+                parar.run();
             }
         }
     }
@@ -161,10 +167,14 @@ public class VideoPipeline {
             output = plan.output();
             Path workDir = storage.dir(projectId);
 
-            String engineLog = runner.run(plan.command(), workDir, workDir.resolve(output),
-                    Duration.ofMinutes(properties.getStepTimeoutMinutes()),
-                    process -> running.put(jobId, process),
-                    porcento -> progress.put(jobId, porcento));
+            Duration limite = Duration.ofMinutes(properties.getStepTimeoutMinutes());
+            String engineLog = plan.command() != null
+                    ? runner.run(plan.command(), workDir, workDir.resolve(output), limite,
+                            process -> running.put(jobId, () -> EngineRunner.kill(process)),
+                            porcento -> progress.put(jobId, porcento))
+                    : remote.run(job.getStep(), projectId, plan.values(), workDir.resolve(output), limite,
+                            parar -> running.put(jobId, parar),
+                            porcento -> progress.put(jobId, porcento));
 
             store.succeed(jobId, engineLog, plan.produces(), output)
                     .forEach(orfao -> storage.delete(projectId, orfao));
@@ -191,32 +201,31 @@ public class VideoPipeline {
         Long id = project.getId();
         return switch (step) {
             case VOZ -> {
-                String template = required(properties.getVoiceCommand(), "voz");
                 if (project.getScript() == null || project.getScript().isBlank()) {
                     throw new IllegalArgumentException("Escreva ou gere o roteiro antes de gerar a voz.");
                 }
+                ready(Step.VOZ, properties.getVoiceCommand(), "voz");
                 // Por arquivo, não por argumento: roteiro tem aspas, quebras e tamanho livre.
                 String text = storage.writeText(id, "roteiro.txt", project.getScript());
                 String out = storage.newName(VideoFile.AUDIO, "wav");
-                yield new Plan(VideoCommands.expand(template, Map.of("text", text, "out", out)),
-                        VideoFile.AUDIO, out);
+                yield engine(properties.getVoiceCommand(), Map.of("text", text, "out", out), VideoFile.AUDIO, out);
             }
             case LIPSYNC -> {
-                String template = required(properties.getLipsyncCommand(), "sincronia labial");
                 need(project, VideoFile.BASE, "Envie o vídeo-base antes de sincronizar.");
                 need(project, VideoFile.AUDIO, "Envie ou gere o áudio antes de sincronizar.");
+                ready(Step.LIPSYNC, properties.getLipsyncCommand(), "sincronia labial");
                 String out = storage.newName(VideoFile.LIPSYNC, "mp4");
-                yield new Plan(VideoCommands.expand(template, Map.of(
+                yield engine(properties.getLipsyncCommand(), Map.of(
                         "video", project.file(VideoFile.BASE),
                         "audio", project.file(VideoFile.AUDIO),
-                        "out", out)), VideoFile.LIPSYNC, out);
+                        "out", out), VideoFile.LIPSYNC, out);
             }
             case LEGENDAS -> {
-                String template = required(properties.getTranscribeCommand(), "transcrição");
                 need(project, VideoFile.AUDIO, "Envie ou gere o áudio antes de transcrever.");
+                ready(Step.LEGENDAS, properties.getTranscribeCommand(), "transcrição");
                 String out = storage.newName(VideoFile.SUBTITLES, "srt");
-                yield new Plan(VideoCommands.expand(template, Map.of(
-                        "audio", project.file(VideoFile.AUDIO), "out", out)), VideoFile.SUBTITLES, out);
+                yield engine(properties.getTranscribeCommand(),
+                        Map.of("audio", project.file(VideoFile.AUDIO), "out", out), VideoFile.SUBTITLES, out);
             }
             case RENDER -> {
                 need(project, VideoFile.BASE, "Envie o vídeo-base antes de renderizar.");
@@ -226,16 +235,27 @@ public class VideoPipeline {
                 String out = storage.newName(VideoFile.FINAL, "mp4");
                 yield new Plan(VideoCommands.render(properties.getFfmpeg(), video,
                         project.file(VideoFile.AUDIO), project.file(VideoFile.SUBTITLES), out),
-                        VideoFile.FINAL, out);
+                        Map.of(), VideoFile.FINAL, out);
             }
         };
     }
 
-    private static String required(String template, String motor) {
-        if (template == null || template.isBlank()) {
+    /** Recusa na hora uma etapa sem motor — configurado aqui ou ligado no Windows. */
+    private void ready(Step step, String template, String motor) {
+        if (remote.configured()) {
+            if (!Boolean.TRUE.equals(remote.available().get(step))) {
+                throw new IllegalArgumentException("O motor de " + motor + " não está disponível: no Windows, "
+                        + "rode scripts\\motores.ps1 (ou confira se ele está instalado) e tente de novo.");
+            }
+        } else if (template == null || template.isBlank()) {
             throw new IllegalArgumentException("O motor de " + motor + " não está configurado nesta instalação.");
         }
-        return template;
+    }
+
+    /** Local: o comando montado aqui. Remoto: só os nomes, e o servidor monta o comando dele. */
+    private Plan engine(String template, Map<String, String> values, VideoFile produces, String output) {
+        List<String> command = remote.configured() ? null : VideoCommands.expand(template, values);
+        return new Plan(command, values, produces, output);
     }
 
     private static void need(VideoProject project, VideoFile kind, String message) {
@@ -247,6 +267,6 @@ public class VideoPipeline {
     /** Um motor não pode sobreviver ao backend segurando a GPU. */
     @PreDestroy
     void stopEngines() {
-        running.values().forEach(EngineRunner::kill);
+        running.values().forEach(Runnable::run);
     }
 }

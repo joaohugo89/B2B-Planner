@@ -60,6 +60,13 @@ services:
       AI_BASE_URL: ${AI_BASE_URL:-}
       AI_MODEL: ${AI_MODEL:-claude-opus-5-5}
       ANTHROPIC_API_KEY: ${ANTHROPIC_API_KEY:-}
+      # Video Studio: voz, sincronia e legendas rodam no servidor de motores do Windows
+      # (scripts/motores.ps1). Vazio, essas etapas ficam indisponíveis e o render continua.
+      VIDEO_ENGINE_URL: ${VIDEO_ENGINE_URL:-}
+      VIDEO_ENGINE_KEY: ${VIDEO_ENGINE_KEY:-}
+    extra_hosts:
+      # Já existe no Docker Desktop; a linha garante o nome também num Docker de Linux.
+      - "host.docker.internal:host-gateway"
     volumes:
       - uploads:/app/uploads
     ports:

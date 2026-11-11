@@ -18,10 +18,7 @@ RUN npm run build
 # ---- runtime --------------------------------------------------------------
 FROM nginx:1.27-alpine
 
-# Como template: a imagem oficial troca ${BACKEND_URL} pelo valor do ambiente na partida.
-# Só variáveis definidas são trocadas, então $host, $scheme etc. do nginx ficam intactos.
-ENV BACKEND_URL=http://backend:8081
-COPY nginx.conf /etc/nginx/templates/default.conf.template
+COPY nginx.conf /etc/nginx/conf.d/default.conf
 COPY --from=build /build/dist /usr/share/nginx/html
 
 EXPOSE 80

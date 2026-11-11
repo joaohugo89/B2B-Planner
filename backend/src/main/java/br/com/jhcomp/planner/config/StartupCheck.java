@@ -62,7 +62,7 @@ public class StartupCheck {
                     motores.containsValue(true)
                             ? "ligados: " + motores.entrySet().stream().filter(java.util.Map.Entry::getValue)
                                     .map(e -> e.getKey().name()).toList()
-                            : "nenhum motor de IA configurado — áudio e legenda entram à mão"));
+                            : "nenhum motor de IA disponível — no Windows, rode scripts\\motores.ps1"));
 
             log.info("""
 

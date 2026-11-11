@@ -22,6 +22,10 @@ services:
     ports: !override
       # A API já é servida pelo nginx do frontend em /api; esta porta fica para depurar daqui.
       - "127.0.0.1:8081:8081"
+    volumes: !override
+      # Uma pasta do Windows em vez do volume interno do Docker: o servidor de motores roda no
+      # Windows e precisa enxergar os mesmos arquivos de vídeo que o backend grava.
+      - ./backend/uploads:/app/uploads
 
   frontend:
     ports: !override

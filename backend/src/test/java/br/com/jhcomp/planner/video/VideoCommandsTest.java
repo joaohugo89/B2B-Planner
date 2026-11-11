@@ -54,19 +54,15 @@ class VideoCommandsTest {
     @Test
     @DisplayName("produzir tudo roda só as etapas com motor, na ordem, e sempre fecha no render")
     void sequenciaDeProducao() {
-        VideoProperties semMotores = new VideoProperties();
-        assertThat(VideoPipeline.sequence(semMotores)).containsExactly(VideoJob.Step.RENDER);
+        assertThat(VideoPipeline.sequence(Map.of())).containsExactly(VideoJob.Step.RENDER);
 
-        VideoProperties completo = new VideoProperties();
-        completo.setVoiceCommand("voz {text} {out}");
-        completo.setLipsyncCommand("boca {video} {audio} {out}");
-        completo.setTranscribeCommand("srt {audio} {out}");
-        assertThat(VideoPipeline.sequence(completo)).containsExactly(
-                VideoJob.Step.VOZ, VideoJob.Step.LIPSYNC, VideoJob.Step.LEGENDAS, VideoJob.Step.RENDER);
+        assertThat(VideoPipeline.sequence(Map.of(VideoJob.Step.VOZ, true, VideoJob.Step.LIPSYNC, true,
+                VideoJob.Step.LEGENDAS, true, VideoJob.Step.RENDER, true)))
+                .containsExactly(VideoJob.Step.VOZ, VideoJob.Step.LIPSYNC, VideoJob.Step.LEGENDAS, VideoJob.Step.RENDER);
 
-        VideoProperties semBoca = new VideoProperties();
-        semBoca.setVoiceCommand("voz {text} {out}");
-        assertThat(VideoPipeline.sequence(semBoca)).containsExactly(VideoJob.Step.VOZ, VideoJob.Step.RENDER);
+        // Motores do Windows desligados na hora: a etapa fica de fora em vez de falhar no meio.
+        assertThat(VideoPipeline.sequence(Map.of(VideoJob.Step.VOZ, true, VideoJob.Step.LIPSYNC, false)))
+                .containsExactly(VideoJob.Step.VOZ, VideoJob.Step.RENDER);
     }
 
     @Test

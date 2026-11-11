@@ -20,8 +20,10 @@ import java.util.regex.Pattern;
 final class Progress {
 
     private static final Pattern MARCADOR = Pattern.compile("PROGRESSO (\\d{1,3})");
-    private static final Pattern DURACAO = Pattern.compile("Duration: (\\d+):(\\d\\d):(\\d\\d(?:\\.\\d+)?)");
-    private static final Pattern TEMPO = Pattern.compile("time=(\\d+):(\\d\\d):(\\d\\d(?:\\.\\d+)?)");
+    // Dígitos limitados: a saída é de um programa externo, e "time=99999999999:..." não pode
+    // estourar a conversão dentro do laço que vigia o motor.
+    private static final Pattern DURACAO = Pattern.compile("Duration: (\\d{1,6}):(\\d\\d):(\\d\\d(?:\\.\\d{1,6})?)");
+    private static final Pattern TEMPO = Pattern.compile("time=(\\d{1,6}):(\\d\\d):(\\d\\d(?:\\.\\d{1,6})?)");
     private static final Pattern PORCENTO = Pattern.compile("(\\d{1,3})%");
 
     /** A menor duração entre as entradas: o render corta no fluxo mais curto. */

@@ -81,7 +81,7 @@ public class EngineRunner {
                 Integer ultimo = null;
                 while (!(terminou = process.waitFor(POLL_MS, TimeUnit.MILLISECONDS))
                         && System.nanoTime() < limite) {
-                    Integer atual = progress.update(tail(logFile));
+                    Integer atual = medir(progress, logFile);
                     if (atual != null && !atual.equals(ultimo)) {
                         ultimo = atual;
                         onProgress.accept(atual);
@@ -113,6 +113,19 @@ public class EngineRunner {
                 // Arquivo temporário: o sistema limpa.
             }
         }
+    }
+
+    /** A barra é enfeite: uma saída estranha do motor nunca pode derrubar a espera por ele. */
+    static Integer medir(Progress progress, String saida) {
+        try {
+            return progress.update(saida);
+        } catch (RuntimeException ex) {
+            return null;
+        }
+    }
+
+    private static Integer medir(Progress progress, Path logFile) {
+        return medir(progress, tail(logFile));
     }
 
     /** Mata o processo e os filhos: "wsl ..." e scripts .bat deixam o motor de verdade num filho. */

@@ -17,6 +17,12 @@ public class VideoProperties {
     private String voiceCommand = "";
     private String lipsyncCommand = "";
     private String transcribeCommand = "";
+    /**
+     * Servidor de motores no Windows (scripts/motores.ps1). Preenchido, voz, sincronia e
+     * transcrição vão para lá e os três comandos acima deixam de valer.
+     */
+    private String engineUrl = "";
+    private String engineKey = "";
 
     public String getDir() { return dir; }
     public void setDir(String dir) { this.dir = dir; }
@@ -30,4 +36,8 @@ public class VideoProperties {
     public void setLipsyncCommand(String lipsyncCommand) { this.lipsyncCommand = lipsyncCommand; }
     public String getTranscribeCommand() { return transcribeCommand; }
     public void setTranscribeCommand(String transcribeCommand) { this.transcribeCommand = transcribeCommand; }
+    public String getEngineUrl() { return engineUrl; }
+    public void setEngineUrl(String engineUrl) { this.engineUrl = engineUrl == null ? "" : engineUrl; }
+    public String getEngineKey() { return engineKey; }
+    public void setEngineKey(String engineKey) { this.engineKey = engineKey == null ? "" : engineKey; }
 }

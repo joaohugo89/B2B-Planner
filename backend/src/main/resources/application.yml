@@ -90,6 +90,11 @@ jhcomp:
     voice-command: ${VIDEO_VOICE_COMMAND:}
     lipsync-command: ${VIDEO_LIPSYNC_COMMAND:}
     transcribe-command: ${VIDEO_TRANSCRIBE_COMMAND:}
+    # Servidor de motores no Windows (scripts/motores.ps1). Preenchido, os três comandos acima
+    # deixam de valer: voz, sincronia e legendas vão para lá. Com o backend no Docker:
+    # http://host.docker.internal:8095. A chave é a mesma dos dois lados.
+    engine-url: ${VIDEO_ENGINE_URL:}
+    engine-key: ${VIDEO_ENGINE_KEY:}
   admin:
     # Vazia: senha aleatória gerada no primeiro boot e impressa no log uma única vez.
     password: ${JHCOMP_ADMIN_PASSWORD:}
