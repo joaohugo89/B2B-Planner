@@ -13,8 +13,6 @@ public interface PostRepository extends JpaRepository<Post, Long> {
 
     Optional<Post> findByCode(String code);
 
-    boolean existsByCode(String code);
-
     List<Post> findAllByOrderByCodeAsc();
 
     List<Post> findByStatusOrderByCodeAsc(PostStatus status);
@@ -23,8 +21,4 @@ public interface PostRepository extends JpaRepository<Post, Long> {
 
     /** Usado na partida para destravar publicações que o restart deixou pela metade. */
     List<Post> findByPublishState(PublishState state);
-
-    long countByStatus(PostStatus status);
-
-    long countByAudience(Audience audience);
 }

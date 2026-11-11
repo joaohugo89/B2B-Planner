@@ -4,7 +4,6 @@ import { assetsApi } from '../api/services';
 import { useApi } from '../api/useApi';
 import { copiarTexto, EmptyState, ErrorState, LoadingState, PageHeader } from '../components/primitives';
 import { AssetUploadForm } from '../components/AssetUploadForm';
-import { useAuth } from '../auth/AuthContext';
 import type { AssetKind } from '../types/api';
 import { assetUrl } from '../api/assetUrl';
 
@@ -32,7 +31,6 @@ export function TemplateExportPage() {
     [kind],
   );
   const [copiedCode, setCopiedCode] = useState<string | null>(null);
-  const { session } = useAuth();
 
   return (
     <>
@@ -59,13 +57,7 @@ export function TemplateExportPage() {
       />
 
       <div className="shell flex flex-col gap-6 py-10">
-        {session ? (
-          <AssetUploadForm onUploaded={assets.reload} />
-        ) : (
-          <div className="panel p-4 text-sm text-content-muted">
-            Entre com sua conta pelo botão no topo para enviar novos templates.
-          </div>
-        )}
+        <AssetUploadForm onUploaded={assets.reload} />
 
         {assets.loading && !assets.data && <LoadingState label="Carregando catálogo de templates…" />}
         {assets.error && <ErrorState message={assets.error} onRetry={assets.reload} />}

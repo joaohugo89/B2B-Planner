@@ -38,15 +38,6 @@ public class InstagramProperties {
     public String getApiVersion() { return apiVersion; }
     public void setApiVersion(String apiVersion) { this.apiVersion = apiVersion; }
 
-    public boolean isConfigured() {
-        return !appId.isBlank() && !appSecret.isBlank();
-    }
-
-    public boolean hasPublicBaseUrl() {
-        return publicBaseUrl != null && !publicBaseUrl.isBlank()
-                && !publicBaseUrl.contains("localhost") && !publicBaseUrl.contains("127.0.0.1");
-    }
-
     public String graphUrl(String path) {
         return "https://graph.facebook.com/" + apiVersion + path;
     }

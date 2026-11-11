@@ -6,6 +6,7 @@ import jakarta.validation.constraints.Size;
 
 import java.time.Instant;
 import java.util.List;
+import java.util.function.Function;
 
 public final class VideoDtos {
 
@@ -24,11 +25,13 @@ public final class VideoDtos {
     public record JobRequest(@NotNull VideoJob.Step step) {
     }
 
-    public record JobResponse(Long id, VideoJob.Step step, VideoJob.State state, String error, String log,
+    /** @param progress 0 a 100 enquanto roda e o motor informa; null nos demais casos */
+    public record JobResponse(Long id, VideoJob.Step step, VideoJob.State state, Integer progress,
+                              String error, String log,
                               Instant createdAt, Instant startedAt, Instant finishedAt) {
-        public static JobResponse from(VideoJob job) {
-            return new JobResponse(job.getId(), job.getStep(), job.getState(), job.getError(), job.getLog(),
-                    job.getCreatedAt(), job.getStartedAt(), job.getFinishedAt());
+        public static JobResponse from(VideoJob job, Integer progress) {
+            return new JobResponse(job.getId(), job.getStep(), job.getState(), progress, job.getError(),
+                    job.getLog(), job.getCreatedAt(), job.getStartedAt(), job.getFinishedAt());
         }
     }
 
@@ -37,12 +40,14 @@ public final class VideoDtos {
                                   boolean hasBase, boolean hasAudio, boolean hasLipsync,
                                   boolean hasSubtitles, boolean hasFinal,
                                   Instant updatedAt, List<JobResponse> jobs) {
-        public static ProjectResponse from(VideoProject project, List<VideoJob> jobs) {
+        public static ProjectResponse from(VideoProject project, List<VideoJob> jobs,
+                                           Function<Long, Integer> progress) {
             return new ProjectResponse(project.getId(), project.getTitle(), project.getScript(),
                     project.getPostId(),
                     project.has(VideoFile.BASE), project.has(VideoFile.AUDIO), project.has(VideoFile.LIPSYNC),
                     project.has(VideoFile.SUBTITLES), project.has(VideoFile.FINAL),
-                    project.getUpdatedAt(), jobs.stream().map(JobResponse::from).toList());
+                    project.getUpdatedAt(),
+                    jobs.stream().map(job -> JobResponse.from(job, progress.apply(job.getId()))).toList());
         }
     }
 }

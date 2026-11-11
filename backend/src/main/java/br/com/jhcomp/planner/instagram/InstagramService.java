@@ -265,9 +265,13 @@ public class InstagramService {
                     + "&access_token=" + enc(token)).path("id").asText();
         }
 
-        String mediaId = post(base + "/media_publish"
-                + "?creation_id=" + enc(creationId)
-                + "&access_token=" + enc(token)).path("id").asText();
+        // Uma tentativa só: se a Meta publicou e a resposta se perdeu, repetir publicaria de novo.
+        // Os passos anteriores podem repetir à vontade — um contêiner a mais expira sozinho.
+        String mediaId = check(ler(http.post()
+                .uri(montar(base + "/media_publish"
+                        + "?creation_id=" + enc(creationId)
+                        + "&access_token=" + enc(token)))
+                .retrieve().body(byte[].class))).path("id").asText();
 
         post.setInstagramMediaId(mediaId);
         post.setPublishedAt(Instant.now());

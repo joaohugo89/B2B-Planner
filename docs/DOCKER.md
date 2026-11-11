@@ -192,6 +192,34 @@ Mexeu só no frontend? Troque o final por `--build frontend` e sobe mais rápido
 
 ---
 
+## Modo vídeo: o backend fora do contêiner
+
+O Video Studio chama motores de IA que rodam no Windows e no WSL — e um contêiner não
+consegue iniciar esses programas. Por isso, com os motores instalados, o backend roda no
+Windows e o resto continua no Docker:
+
+| Peça | Onde roda |
+|---|---|
+| Banco (5440) | contêiner, como sempre |
+| Frontend (localhost:8090) e túnel do domínio | contêiner, apontando para `host.docker.internal:8081` |
+| Backend (8081) | **Windows**, preso a 127.0.0.1 — a rede local não o enxerga |
+
+Um backend só. É isso que o `docker-compose.video.yml` garante: ele tira o serviço
+`backend` do compose, porque dois backends no mesmo banco disputariam a porta e a fila de
+jobs de vídeo.
+
+```powershell
+.\scripts\video-local.ps1
+```
+
+O script marca `MODO_BACKEND=host` no `.env`, sobe os contêineres com o frontend já
+apontando para o Windows e inicia o backend na própria janela — fechá-la para o backend.
+O hook de `pre-push` lê a mesma marca e não ressuscita o backend em contêiner; depois de
+um push, rode o script de novo para o backend pegar o código novo.
+
+Para voltar ao backend em contêiner: apague a linha `MODO_BACKEND=host` do `.env` e rode o
+`up -d --build` da seção "Suba".
+
 ## Endereço fixo (planner.seu-dominio.com)
 
 Para um endereço que não muda, use o `docker-compose.dominio.yml`: o passo a passo está em

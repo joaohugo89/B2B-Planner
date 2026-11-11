@@ -2,6 +2,7 @@ package br.com.jhcomp.planner.ai;
 
 import br.com.jhcomp.planner.ai.AiDtos.ChatMessage;
 import br.com.jhcomp.planner.ai.provider.AnthropicProvider;
+import br.com.jhcomp.planner.ai.provider.OpenAiCompatibleProvider;
 import br.com.jhcomp.planner.ai.AiDtos.DraftResponse;
 import br.com.jhcomp.planner.ai.AiDtos.PostDraft;
 import br.com.jhcomp.planner.post.repository.PostRepository;
@@ -156,6 +157,31 @@ class AiAssistantServiceTest {
 
         assertThat(reply).isEqualTo("resposta");
         verify(usage).record("chat", "claude-opus-5-5", 80L, 15L, "medium");
+    }
+
+    @Test
+    @DisplayName("sem chave, liga só quando o serviço compatível roda na própria máquina")
+    void keylessOnlyForLocalService() {
+        when(settings.valueOr(eq(SettingsService.AI_API_KEY), any())).thenReturn("");
+        when(settings.valueOr(eq(SettingsService.AI_PROVIDER), any())).thenReturn("openai");
+        AiAssistantService local = new AiAssistantService(
+                new AiProperties(), mock(PostRepository.class), settings, usage,
+                new DraftCache(Duration.ofHours(1), Instant::now),
+                List.of(new AnthropicProvider(apiKey -> mock(AnthropicClient.class)),
+                        new OpenAiCompatibleProvider(org.springframework.web.client.RestClient.builder(),
+                                new com.fasterxml.jackson.databind.ObjectMapper())));
+
+        when(settings.valueOr(eq(SettingsService.AI_BASE_URL), any())).thenReturn("http://localhost:11434/v1");
+        assertThat(local.isEnabled()).isTrue();
+
+        when(settings.valueOr(eq(SettingsService.AI_BASE_URL), any())).thenReturn("http://host.docker.internal:11434/v1");
+        assertThat(local.isEnabled()).isTrue();
+
+        // Um serviço na internet sem chave continua desligado: só recusaria a chamada.
+        when(settings.valueOr(eq(SettingsService.AI_BASE_URL), any())).thenReturn("https://api.groq.com/openai/v1");
+        assertThat(local.isEnabled()).isFalse();
+        when(settings.valueOr(eq(SettingsService.AI_BASE_URL), any())).thenReturn("http://localhost.evil.com/v1");
+        assertThat(local.isEnabled()).isFalse();
     }
 
     @Test

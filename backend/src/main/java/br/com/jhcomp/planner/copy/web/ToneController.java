@@ -86,7 +86,7 @@ public class ToneController {
     public ResponseEntity<Void> delete(@PathVariable Long id) {
         Tone tone = tones.findById(id).orElseThrow(() -> new NotFoundException("Tom", id));
 
-        long inUse = copies.findByToneOrderByPostCodeAsc(tone.getCode()).size();
+        long inUse = copies.countByTone(tone.getCode());
         if (inUse > 0) {
             throw new ResponseStatusException(HttpStatus.CONFLICT,
                     "Este tom está em " + inUse + " legenda(s). Troque o tom delas antes de apagar.");
@@ -97,7 +97,7 @@ public class ToneController {
     }
 
     private ToneResponse toResponse(Tone tone) {
-        long usage = copies.findByToneOrderByPostCodeAsc(tone.getCode()).size();
+        long usage = copies.countByTone(tone.getCode());
         return new ToneResponse(tone.getId(), tone.getCode(), tone.getLabel(), tone.getDescription(), usage);
     }
 }

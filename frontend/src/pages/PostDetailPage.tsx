@@ -4,7 +4,6 @@ import { Link } from 'react-router-dom';
 import { instagramApi, postsApi, videoApi, type PublishStatus } from '../api/services';
 import { describeError } from '../api/client';
 import { useApi } from '../api/useApi';
-import { useAuth } from '../auth/AuthContext';
 import { PublicacaoEditor } from '../components/PublicacaoEditor';
 import { CarrosselPost } from '../components/CarrosselPost';
 import { ConfirmAction } from '../components/ui';
@@ -18,8 +17,7 @@ const AUDIENCE_LABEL: Record<Audience, string> = {
 };
 
 export function PostDetailPage() {
-  const { session } = useAuth();
-  const posts = useApi(() => postsApi.list(), [Boolean(session)]);
+  const posts = useApi(() => postsApi.list(), []);
   const [selected, setSelected] = useState<string | null>(null);
 
   const current = posts.data?.find((p) => p.code === selected) ?? posts.data?.[0] ?? null;
@@ -97,7 +95,6 @@ function PostInspector({
   onChanged: () => void;
   onDeleted: () => void;
 }) {
-  const { session } = useAuth();
   const [copied, setCopied] = useState(false);
   const [statusBusy, setStatusBusy] = useState(false);
   const [statusError, setStatusError] = useState<string | null>(null);
@@ -185,7 +182,7 @@ function PostInspector({
                 key={option.value}
                 type="button"
                 title={option.hint}
-                disabled={!session || statusBusy || post.status === option.value}
+                disabled={statusBusy || post.status === option.value}
                 onClick={() => changeStatus(option.value)}
                 className={`label-code rounded px-3 py-2 text-left transition disabled:opacity-60 ${
                   post.status === option.value ? 'bg-brand text-brand-ink' : 'bg-surface-high text-content-muted hover:text-content'
@@ -195,20 +192,17 @@ function PostInspector({
               </button>
             ))}
           </div>
-          {!session && (
-            <span className="text-xs text-content-muted">Entre com sua conta para mudar a situação.</span>
-          )}
           {statusError && <span className="text-xs text-brand-soft">{statusError}</span>}
 
           {/* Os textos ficam editáveis depois de criados: o rascunho da IA quase nunca sai pronto. */}
-          {session && !editando && (
+          {!editando && (
             <button type="button" className="btn-ghost" onClick={() => setEditando(true)}>
               <Pencil size={12} />
               Editar textos da publicação
             </button>
           )}
 
-          {session && editando && (
+          {editando && (
             <PublicacaoEditor
               post={post}
               onCancel={() => setEditando(false)}
@@ -219,21 +213,19 @@ function PostInspector({
             />
           )}
 
-          {session && <PublishControl post={post} onPublished={onChanged} />}
+          <PublishControl post={post} onPublished={onChanged} />
 
-          {session && (
-            <ConfirmAction
-              label="Apagar post"
-              icon={<Trash2 size={12} />}
-              question={`Apagar o post ${post.code} do planner? A ação não pode ser desfeita (as artes continuam no catálogo).`}
-              confirmLabel={deleting ? 'Apagando…' : 'Apagar post'}
-              onConfirm={deletePost}
-              busy={deleting}
-            />
-          )}
+          <ConfirmAction
+            label="Apagar post"
+            icon={<Trash2 size={12} />}
+            question={`Apagar o post ${post.code} do planner? A ação não pode ser desfeita (as artes continuam no catálogo).`}
+            confirmLabel={deleting ? 'Apagando…' : 'Apagar post'}
+            onConfirm={deletePost}
+            busy={deleting}
+          />
         </div>
 
-        {session && <VideosDoPost postId={post.id} />}
+        <VideosDoPost postId={post.id} />
 
         <dl className="grid grid-cols-2 gap-3">
           <Meta label="Formato" value={`${post.format} (${post.slideCount} slide${post.slideCount > 1 ? 's' : ''})`} />

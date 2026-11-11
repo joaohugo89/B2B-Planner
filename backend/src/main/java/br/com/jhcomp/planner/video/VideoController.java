@@ -56,12 +56,13 @@ public class VideoController {
     @GetMapping("/projects")
     public List<ProjectResponse> list(@RequestParam(required = false) Long postId) {
         // A lista não carrega os jobs: quem precisa deles abre o projeto.
-        return service.list(postId).stream().map(project -> ProjectResponse.from(project, List.of())).toList();
+        return service.list(postId).stream()
+                .map(project -> ProjectResponse.from(project, List.of(), pipeline::progress)).toList();
     }
 
     @PostMapping("/projects")
     public ResponseEntity<ProjectResponse> create(@Valid @RequestBody ProjectRequest request) {
-        return ResponseEntity.status(HttpStatus.CREATED).body(ProjectResponse.from(service.create(request), List.of()));
+        return ResponseEntity.status(HttpStatus.CREATED).body(ProjectResponse.from(service.create(request), List.of(), pipeline::progress));
     }
 
     @GetMapping("/projects/{id}")
@@ -117,7 +118,25 @@ public class VideoController {
     @PostMapping("/projects/{id}/jobs")
     public ResponseEntity<JobResponse> submit(@PathVariable Long id, @Valid @RequestBody JobRequest request) {
         return ResponseEntity.status(HttpStatus.ACCEPTED)
-                .body(JobResponse.from(pipeline.submit(id, request.step())));
+                .body(JobResponse.from(pipeline.submit(id, request.step()), null));
+    }
+
+    /** Roda todas as etapas configuradas em sequência; devolve o job da primeira. */
+    @PostMapping("/projects/{id}/produce")
+    public ResponseEntity<JobResponse> produce(@PathVariable Long id) {
+        return ResponseEntity.status(HttpStatus.ACCEPTED).body(JobResponse.from(pipeline.produce(id), null));
+    }
+
+    @GetMapping("/avatar")
+    public Map<String, Boolean> avatar() {
+        return Map.of("saved", service.hasAvatar());
+    }
+
+    /** Guarda o vídeo-base deste projeto como avatar: os próximos projetos já nascem com ele. */
+    @PostMapping("/projects/{id}/avatar")
+    public ResponseEntity<Void> saveAvatar(@PathVariable Long id) {
+        service.saveAvatar(id);
+        return ResponseEntity.noContent().build();
     }
 
     @PostMapping("/jobs/{jobId}/cancel")
@@ -127,6 +146,6 @@ public class VideoController {
     }
 
     private ProjectResponse response(VideoProject project) {
-        return ProjectResponse.from(project, service.jobs(project.getId()));
+        return ProjectResponse.from(project, service.jobs(project.getId()), pipeline::progress);
     }
 }

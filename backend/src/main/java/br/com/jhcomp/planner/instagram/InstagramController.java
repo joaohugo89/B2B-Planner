@@ -53,7 +53,7 @@ public class InstagramController {
         this.states = states;
     }
 
-    /** Público: a UI usa para saber se mostra "Conectar", "Publicar" ou o aviso de configuração. */
+    /** A UI usa para saber se mostra "Conectar", "Publicar" ou o aviso de configuração. */
     @GetMapping("/status")
     public ConnectionStatus status() {
         return service.connectedAccount()

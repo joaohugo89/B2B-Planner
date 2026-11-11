@@ -63,8 +63,4 @@ public class DraftCache {
     public void put(String key, PostDraft draft) {
         entries.put(key, new Entry(draft, clock.get().plus(ttl)));
     }
-
-    public void clear() {
-        entries.clear();
-    }
 }

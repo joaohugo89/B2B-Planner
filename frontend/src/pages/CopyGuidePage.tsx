@@ -12,7 +12,6 @@ import {
 import { describeError } from '../api/client';
 import { PublicacaoEditor } from '../components/PublicacaoEditor';
 import { useApi } from '../api/useApi';
-import { useAuth } from '../auth/AuthContext';
 import { copiarTexto, EmptyState, ErrorState, LoadingState, PageHeader, StatusTag } from '../components/primitives';
 import { ToneManager } from '../components/ToneManager';
 import type { CopyEntry, Post } from '../types/api';
@@ -52,7 +51,6 @@ export function CopyGuidePage() {
   const tones = useApi(() => tonesApi.list(), []);
   const hashtagsQuery = useApi(() => settingsApi.getHashtags(), []);
   const blocks = useApi(() => hashtagBlocksApi.list(), []);
-  const { session } = useAuth();
 
   const [form, setForm] = useState<FormState | null>(null);
   const [feedback, setFeedback] = useState<string | null>(null);
@@ -105,12 +103,10 @@ export function CopyGuidePage() {
               <Settings2 size={12} />
               {showSettings ? 'Fechar ajustes' : 'Tons e hashtags'}
             </button>
-            {session && (
-              <button type="button" className="btn-primary" onClick={startNew}>
-                <Plus size={14} />
-                Nova legenda
-              </button>
-            )}
+            <button type="button" className="btn-primary" onClick={startNew}>
+              <Plus size={14} />
+              Nova legenda
+            </button>
           </div>
         }
       />
@@ -177,7 +173,7 @@ export function CopyGuidePage() {
 
         {feedback && <p className="panel p-3 text-sm text-content-muted">{feedback}</p>}
 
-        {form && session && (
+        {form && (
           <CopyForm
             form={form}
             posts={posts.data ?? []}
@@ -206,7 +202,6 @@ export function CopyGuidePage() {
             posts={posts.data ?? []}
             tones={toneList}
             globalHashtags={tags}
-            canEdit={Boolean(session)}
             onEdit={() => startEdit(entry)}
             onRemove={() => remove(entry)}
             onApplied={(message) => {
@@ -239,7 +234,6 @@ function CopyCard({
   posts,
   tones,
   globalHashtags,
-  canEdit,
   onEdit,
   onRemove,
   onApplied,
@@ -248,7 +242,6 @@ function CopyCard({
   posts: Post[];
   tones: Tone[];
   globalHashtags: string;
-  canEdit: boolean;
   onEdit: () => void;
   onRemove: () => void;
   onApplied: (message: string) => void;
@@ -301,17 +294,13 @@ function CopyCard({
           <span className="label-code rounded bg-surface-high px-2 py-1 text-content-muted">
             {entry.charCount} caracteres
           </span>
-          {canEdit && (
-            <>
-              <button type="button" className="btn-ghost" onClick={onEdit}>
-                <Pencil size={12} />
-                Editar
-              </button>
-              <button type="button" className="btn-ghost" onClick={onRemove}>
-                <Trash2 size={12} />
-              </button>
-            </>
-          )}
+          <button type="button" className="btn-ghost" onClick={onEdit}>
+            <Pencil size={12} />
+            Editar
+          </button>
+          <button type="button" className="btn-ghost" onClick={onRemove}>
+            <Trash2 size={12} />
+          </button>
         </div>
       </div>
 
@@ -325,7 +314,7 @@ function CopyCard({
         <span className="label-code text-content-muted">CTA: {entry.cta || 'Não definido'}</span>
 
         <div className="flex flex-wrap items-center gap-2">
-          {canEdit && posts.length > 0 && (
+          {posts.length > 0 && (
             <select
               defaultValue=""
               disabled={applying}
@@ -554,7 +543,6 @@ function CopyForm({
  * mudada na tela do post — e era fácil achar que estava travada.</p>
  */
 function LegendasDosPosts({ posts, onAlterado }: { posts: Post[]; onAlterado: () => void }) {
-  const { session } = useAuth();
   const [editando, setEditando] = useState<number | null>(null);
   const [aberto, setAberto] = useState(true);
 
@@ -591,7 +579,7 @@ function LegendasDosPosts({ posts, onAlterado }: { posts: Post[]; onAlterado: ()
                 </span>
                 <span className="text-sm font-semibold">{post.title}</span>
                 <StatusTag status={post.status} />
-                {session && editando !== post.id && (
+                {editando !== post.id && (
                   <button
                     type="button"
                     className="btn-ghost ml-auto"
@@ -627,9 +615,6 @@ function LegendasDosPosts({ posts, onAlterado }: { posts: Post[]; onAlterado: ()
         </div>
       )}
 
-      {!session && (
-        <p className="text-sm text-content-muted">Entre com sua conta para editar as legendas.</p>
-      )}
     </section>
   );
 }

@@ -3,6 +3,8 @@ package br.com.jhcomp.planner.video;
 import org.springframework.stereotype.Component;
 
 import java.io.IOException;
+import java.nio.ByteBuffer;
+import java.nio.channels.SeekableByteChannel;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -10,6 +12,7 @@ import java.time.Duration;
 import java.util.List;
 import java.util.concurrent.TimeUnit;
 import java.util.function.Consumer;
+import java.util.function.IntConsumer;
 
 /**
  * Roda um motor externo (FFmpeg, voz, sincronia, transcrição) e espera o arquivo de saída.
@@ -24,6 +27,9 @@ public class EngineRunner {
 
     /** O fim da saída é onde o motor diz por que falhou; o começo é barra de progresso. */
     private static final int LOG_TAIL = 8_000;
+
+    /** De quanto em quanto tempo a saída é relida em busca do progresso. */
+    private static final long POLL_MS = 1_500;
 
     /** Falha de um motor, com o que ele escreveu antes de parar. */
     public static class EngineException extends RuntimeException {
@@ -40,11 +46,12 @@ public class EngineRunner {
     }
 
     /**
-     * @param onStart recebe o processo assim que ele sobe, para quem quiser cancelá-lo
+     * @param onStart    recebe o processo assim que ele sobe, para quem quiser cancelá-lo
+     * @param onProgress recebe a porcentagem (0 a 100) sempre que ela muda
      * @return o fim da saída do motor
      */
     public String run(List<String> command, Path workDir, Path expectedOutput, Duration timeout,
-                      Consumer<Process> onStart) {
+                      Consumer<Process> onStart, IntConsumer onProgress) {
         Path logFile;
         try {
             logFile = Files.createTempFile("jhcomp-engine-", ".log");
@@ -69,7 +76,17 @@ public class EngineRunner {
 
             boolean terminou;
             try {
-                terminou = process.waitFor(timeout.toMillis(), TimeUnit.MILLISECONDS);
+                long limite = System.nanoTime() + timeout.toNanos();
+                Progress progress = new Progress();
+                Integer ultimo = null;
+                while (!(terminou = process.waitFor(POLL_MS, TimeUnit.MILLISECONDS))
+                        && System.nanoTime() < limite) {
+                    Integer atual = progress.update(tail(logFile));
+                    if (atual != null && !atual.equals(ultimo)) {
+                        ultimo = atual;
+                        onProgress.accept(atual);
+                    }
+                }
             } catch (InterruptedException ex) {
                 kill(process);
                 Thread.currentThread().interrupt();
@@ -132,10 +149,16 @@ public class EngineRunner {
         }
     }
 
+    /** Só o fim do arquivo: uma barra de progresso de minutos escreve megabytes. */
     private static String tail(Path logFile) {
-        try {
-            String text = new String(Files.readAllBytes(logFile), StandardCharsets.UTF_8);
-            return text.length() <= LOG_TAIL ? text : text.substring(text.length() - LOG_TAIL);
+        try (SeekableByteChannel channel = Files.newByteChannel(logFile)) {
+            long inicio = Math.max(0, channel.size() - LOG_TAIL);
+            ByteBuffer buffer = ByteBuffer.allocate((int) (channel.size() - inicio));
+            channel.position(inicio);
+            while (buffer.hasRemaining() && channel.read(buffer) > 0) {
+                // lê até encher
+            }
+            return new String(buffer.array(), 0, buffer.position(), StandardCharsets.UTF_8);
         } catch (IOException ex) {
             return "";
         }

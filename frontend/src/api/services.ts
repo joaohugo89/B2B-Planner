@@ -33,6 +33,16 @@ export const postsApi = {
   },
 };
 
+/** Próximo código livre no planner: 01, 02, 03… Usado por quem cria post (editor e assistente). */
+export function proximoCodigo(existentes: string[]): string {
+  const usados = new Set(existentes);
+  for (let i = 1; i < 100; i += 1) {
+    const code = String(i).padStart(2, '0');
+    if (!usados.has(code)) return code;
+  }
+  return String(Date.now()).slice(-4);
+}
+
 export interface ChatMessage {
   role: 'user' | 'assistant';
   content: string;
@@ -337,14 +347,16 @@ export const authApi = {
 // ---- Video Studio ----------------------------------------------------------
 
 export type VideoStep = 'VOZ' | 'LIPSYNC' | 'LEGENDAS' | 'RENDER';
-export type VideoJobState = 'NA_FILA' | 'EXECUTANDO' | 'CONCLUIDO' | 'ERRO' | 'CANCELADO';
+type VideoJobState = 'NA_FILA' | 'EXECUTANDO' | 'CONCLUIDO' | 'ERRO' | 'CANCELADO';
 /** Os arquivos de um projeto; só os dois primeiros são enviados, o resto nasce de um job. */
-export type VideoFileKind = 'BASE' | 'AUDIO' | 'LIPSYNC' | 'SUBTITLES' | 'FINAL';
+type VideoFileKind = 'BASE' | 'AUDIO' | 'LIPSYNC' | 'SUBTITLES' | 'FINAL';
 
 export interface VideoJob {
   id: number;
   step: VideoStep;
   state: VideoJobState;
+  /** 0 a 100 enquanto a etapa roda e o motor informa; null fora disso. */
+  progress: number | null;
   error: string | null;
   log: string | null;
   createdAt: string;
@@ -419,6 +431,19 @@ export const videoApi = {
   async saveSubtitles(id: number, text: string) {
     const { data } = await api.put<VideoProject>(`/video/projects/${id}/subtitles`, { text });
     return data;
+  },
+  /** Roda em sequência todas as etapas que têm motor: do roteiro ao MP4. */
+  async produce(id: number) {
+    const { data } = await api.post<VideoJob>(`/video/projects/${id}/produce`);
+    return data;
+  },
+  async hasAvatar() {
+    const { data } = await api.get<{ saved: boolean }>('/video/avatar');
+    return data.saved;
+  },
+  /** Guarda o vídeo-base deste projeto como avatar: os próximos projetos já nascem com ele. */
+  async saveAvatar(id: number) {
+    await api.post(`/video/projects/${id}/avatar`);
   },
   async submit(id: number, step: VideoStep) {
     const { data } = await api.post<VideoJob>(`/video/projects/${id}/jobs`, { step });

@@ -3,7 +3,6 @@ package br.com.jhcomp.planner.settings;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.Size;
-import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestBody;
@@ -21,28 +20,22 @@ public class SettingsController {
     public record HashtagsPayload(@Size(max = 2000) String hashtags) {
     }
 
-    private final AppSettingRepository repository;
+    private final SettingsService settings;
 
-    public SettingsController(AppSettingRepository repository) {
-        this.repository = repository;
+    public SettingsController(SettingsService settings) {
+        this.settings = settings;
     }
 
     @GetMapping
-    @Transactional(readOnly = true)
     public HashtagsPayload getHashtags() {
-        return new HashtagsPayload(
-                repository.findById(GLOBAL_HASHTAGS).map(AppSetting::getValue).orElse(""));
+        return new HashtagsPayload(settings.valueOr(GLOBAL_HASHTAGS, ""));
     }
 
+    /** Vazio apaga a configuração, o que dá no mesmo que "nenhuma hashtag fixa". */
     @PutMapping
-    @Transactional
     public HashtagsPayload setHashtags(@Valid @RequestBody HashtagsPayload payload) {
         String value = payload.hashtags() == null ? "" : payload.hashtags().trim();
-
-        AppSetting setting = repository.findById(GLOBAL_HASHTAGS)
-                .orElseGet(() -> new AppSetting(GLOBAL_HASHTAGS, value));
-        setting.setValue(value);
-
-        return new HashtagsPayload(repository.save(setting).getValue());
+        settings.save(GLOBAL_HASHTAGS, value);
+        return new HashtagsPayload(value);
     }
 }

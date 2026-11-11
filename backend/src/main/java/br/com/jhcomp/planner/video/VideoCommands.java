@@ -10,6 +10,14 @@ import java.util.Map;
  */
 final class VideoCommands {
 
+    /**
+     * Tamanho e posição da legenda. O padrão do filtro é pensado para vídeo deitado: num
+     * Reels vertical a letra sai com mais de 100 px e cobre o rosto. As medidas são relativas
+     * a uma tela de 288 linhas — 9 dá cerca de 60 px em 1920, e a margem tira o texto da
+     * faixa de baixo, onde o Instagram desenha os próprios botões.
+     */
+    private static final String SUBTITLE_STYLE = ":force_style='FontSize=9,MarginV=45,Outline=1'";
+
     private VideoCommands() {
     }
 
@@ -26,7 +34,7 @@ final class VideoCommands {
             args.addAll(List.of("-i", audio));
         }
         if (subtitles != null) {
-            args.addAll(List.of("-vf", "subtitles=" + subtitles));
+            args.addAll(List.of("-vf", "subtitles=" + subtitles + SUBTITLE_STYLE));
         }
         // "0:a?" não falha quando o vídeo-base é mudo.
         args.addAll(List.of("-map", "0:v:0", "-map", audio != null ? "1:a:0" : "0:a?"));

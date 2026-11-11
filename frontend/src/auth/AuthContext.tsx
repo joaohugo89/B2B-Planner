@@ -1,6 +1,6 @@
-import { createContext, useCallback, useContext, useMemo, useState, type ReactNode } from 'react';
+import { createContext, useCallback, useContext, useEffect, useMemo, useState, type ReactNode } from 'react';
 import axios from 'axios';
-import { describeError, tokenStorage } from '../api/client';
+import { describeError, SESSAO_EXPIRADA, tokenStorage } from '../api/client';
 import { authApi } from '../api/services';
 
 const SESSION_KEY = 'jhcomp.session';
@@ -31,6 +31,16 @@ function readSession(): Session | null {
 
 export function AuthProvider({ children }: { children: ReactNode }) {
   const [session, setSession] = useState<Session | null>(readSession);
+
+  // O refresh de 14 dias venceu ou foi revogado: volta para a tela de visitante.
+  useEffect(() => {
+    function expirou() {
+      localStorage.removeItem(SESSION_KEY);
+      setSession(null);
+    }
+    window.addEventListener(SESSAO_EXPIRADA, expirou);
+    return () => window.removeEventListener(SESSAO_EXPIRADA, expirou);
+  }, []);
 
   const signIn = useCallback(async (email: string, password: string) => {
     try {

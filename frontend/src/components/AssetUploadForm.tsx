@@ -113,7 +113,7 @@ export function AssetUploadForm({ onUploaded }: { onUploaded: () => void }) {
 
       <div className="flex flex-wrap items-center justify-between gap-2">
         <span className="label-code text-content-muted">
-          PNG, JPG, WEBP, SVG, ZIP, AFDESIGN ou JSON — até 25 MB.
+          PNG, JPG, WEBP, SVG, ZIP, AFDESIGN ou JSON.
         </span>
         <button type="submit" className="btn-primary" disabled={busy || !file || !code.trim() || !name.trim()}>
           <Upload size={14} />

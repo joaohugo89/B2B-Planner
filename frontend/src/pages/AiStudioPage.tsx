@@ -1,8 +1,7 @@
 import { useEffect, useRef, useState } from 'react';
 import { Bot, Send, Sparkles, Save, User } from 'lucide-react';
-import { aiApi, postsApi, type ChatMessage, type PostDraft } from '../api/services';
+import { aiApi, postsApi, proximoCodigo, type ChatMessage, type PostDraft } from '../api/services';
 import { describeError } from '../api/client';
-import { useAuth } from '../auth/AuthContext';
 import { ErrorState, PageHeader } from '../components/primitives';
 
 const SUGGESTIONS = [
@@ -11,18 +10,7 @@ const SUGGESTIONS = [
   'Reescreva a legenda do post 03 com um gancho mais forte.',
 ];
 
-/** Próximo código livre no planner: 01, 02, 03… */
-function nextCode(existing: string[]): string {
-  const used = new Set(existing);
-  for (let i = 1; i < 100; i += 1) {
-    const code = String(i).padStart(2, '0');
-    if (!used.has(code)) return code;
-  }
-  return String(Date.now()).slice(-4);
-}
-
 export function AiStudioPage() {
-  const { session } = useAuth();
   const [enabled, setEnabled] = useState<boolean | null>(null);
   const [model, setModel] = useState('');
   // Conversa e briefing moram aqui porque os dois painéis precisam dos mesmos dados:
@@ -46,7 +34,7 @@ export function AiStudioPage() {
       <PageHeader
         eyebrow="CONTENT COPILOT"
         title="Assistente de Conteúdo"
-        description="Converse com o Claude para destravar ideias, revisar ângulos e gerar posts já no formato do planner."
+        description="Converse com o assistente para destravar ideias, revisar ângulos e gerar posts já no formato do planner."
         actions={
           enabled !== null && (
             <span className="label-code rounded bg-surface-low px-3 py-1.5 text-content-muted">
@@ -58,13 +46,7 @@ export function AiStudioPage() {
 
       <div className="shell flex flex-col gap-6 py-10">
         {enabled === false && (
-          <ErrorState message="Defina a variável ANTHROPIC_API_KEY no backend para habilitar o assistente." />
-        )}
-
-        {!session && (
-          <div className="panel p-4 text-sm text-content-muted">
-            Entre com sua conta pelo botão no topo: as chamadas ao assistente exigem token de acesso.
-          </div>
+          <ErrorState message="Assistente desligado: escolha o serviço e informe a chave no painel da conta (seu nome, no topo)." />
         )}
 
         {enabled && (
@@ -215,7 +197,7 @@ function ChatPanel({
           </div>
         ))}
 
-        {sending && <p className="label-code text-content-muted">Claude está escrevendo…</p>}
+        {sending && <p className="label-code text-content-muted">O assistente está escrevendo…</p>}
         {error && <p className="text-sm text-brand-soft">{error}</p>}
         <div ref={endRef} />
       </div>
@@ -293,7 +275,7 @@ const PUBLICOS = ['HIBRIDO', 'B2B', 'B2C'] as const;
 async function salvarNoPlanner(draft: PostDraft, publico: string, formato: string) {
   const existing = await postsApi.list();
   const created = await postsApi.create({
-    code: nextCode(existing.map((post) => post.code)),
+    code: proximoCodigo(existing.map((post) => post.code)),
     title: draft.title,
     brandPillar: draft.brandPillar,
     format: normalizar(draft.format, FORMATOS, formato as (typeof FORMATOS)[number]),

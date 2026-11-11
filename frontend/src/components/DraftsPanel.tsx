@@ -2,7 +2,6 @@ import { useState } from 'react';
 import { FilePenLine, Layers, Trash2 } from 'lucide-react';
 import { postsApi } from '../api/services';
 import { describeError } from '../api/client';
-import { useAuth } from '../auth/AuthContext';
 import { EmptyState, LoadingState } from './primitives';
 import type { Post } from '../types/api';
 import { assetUrl } from '../api/assetUrl';
@@ -19,7 +18,6 @@ export function DraftsPanel({
   onOpen: (post: Post) => void;
   onChanged: () => void;
 }) {
-  const { session } = useAuth();
   const [confirming, setConfirming] = useState<number | null>(null);
   const [busyId, setBusyId] = useState<number | null>(null);
   const [error, setError] = useState<string | null>(null);
@@ -76,8 +74,7 @@ export function DraftsPanel({
               Abrir
             </button>
 
-            {session && (
-              confirming === post.id ? (
+            {confirming === post.id ? (
                 <div className="flex items-center gap-1">
                   <button type="button" className="btn-primary px-2" onClick={() => remove(post)} disabled={busyId === post.id}>
                     {busyId === post.id ? '…' : 'Apagar'}
@@ -91,8 +88,7 @@ export function DraftsPanel({
                   <Trash2 size={12} />
                   Apagar
                 </button>
-              )
-            )}
+              )}
           </div>
         </article>
       ))}

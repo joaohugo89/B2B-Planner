@@ -55,8 +55,4 @@ public class AiProperties {
 
     public long getDraftCacheMinutes() { return draftCacheMinutes; }
     public void setDraftCacheMinutes(long draftCacheMinutes) { this.draftCacheMinutes = draftCacheMinutes; }
-
-    public boolean isConfigured() {
-        return apiKey != null && !apiKey.isBlank();
-    }
 }

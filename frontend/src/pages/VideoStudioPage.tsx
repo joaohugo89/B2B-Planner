@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { Captions, Clapperboard, Download, FileAudio, Film, History, Plus, Sparkles, Trash2, X } from 'lucide-react';
+import { Captions, Clapperboard, Download, FileAudio, Film, History, Play, Plus, Sparkles, Trash2, UserRound, X } from 'lucide-react';
 import { useSearchParams } from 'react-router-dom';
 import { postsApi, videoApi, type VideoJob, type VideoProject, type VideoStep } from '../api/services';
 import { describeError } from '../api/client';
@@ -116,6 +116,7 @@ function Projeto({ id, onListChanged, onDeleted }: { id: number; onListChanged: 
   const projeto = useApi(() => videoApi.get(id), [id]);
   const motores = useApi(() => videoApi.engines(), []);
   const posts = useApi(() => postsApi.list(), []);
+  const avatar = useApi(() => videoApi.hasAvatar(), []);
   const [ocupado, setOcupado] = useState<string | null>(null);
   const [erro, setErro] = useState<string | null>(null);
 
@@ -174,6 +175,28 @@ function Projeto({ id, onListChanged, onDeleted }: { id: number; onListChanged: 
             onArquivo={(arquivo) => agir('BASE', () => videoApi.upload(id, 'BASE', arquivo))} />
           <Envio rotulo="Áudio" aceita=".wav,.mp3,.m4a" tem={dados.hasAudio} travado={travado} enviando={ocupado === 'AUDIO'}
             onArquivo={(arquivo) => agir('AUDIO', () => videoApi.upload(id, 'AUDIO', arquivo))} />
+
+          <div className="flex flex-wrap items-center gap-3 rounded bg-surface p-3">
+            <span className="min-w-0 flex-1 text-xs text-content-muted">
+              {avatar.data
+                ? 'Avatar salvo: projetos novos já nascem com ele como vídeo-base.'
+                : 'Sem avatar salvo: cada projeto novo pede o vídeo-base de novo.'}
+            </span>
+            <Button
+              disabled={!dados.hasBase || travado}
+              busy={ocupado === 'avatar'}
+              icon={<UserRound size={12} />}
+              onClick={() =>
+                agir('avatar', async () => {
+                  await videoApi.saveAvatar(id);
+                  avatar.reload();
+                  return dados;
+                })
+              }
+            >
+              {avatar.data ? 'Trocar avatar por este vídeo' : 'Salvar como meu avatar'}
+            </Button>
+          </div>
         </Section>
 
         <Legendas
@@ -191,7 +214,23 @@ function Projeto({ id, onListChanged, onDeleted }: { id: number; onListChanged: 
       <div className="flex flex-col gap-6 lg:col-span-6">
         {erro && <ErrorState message={erro} />}
 
-        <Section icon={<Clapperboard size={14} />} title="Produção" description="Uma etapa por vez: os motores dividem a mesma placa de vídeo.">
+        <Section
+          icon={<Clapperboard size={14} />}
+          title="Produção"
+          description="Produzir tudo roda as etapas em sequência, do roteiro salvo ao MP4. Cada uma também pode ser refeita sozinha."
+          actions={
+            <Button
+              variant="primary"
+              disabled={travado || !dados.hasBase || !motores.data?.RENDER}
+              busy={ocupado === 'tudo'}
+              icon={<Play size={12} />}
+              title={dados.hasBase ? undefined : 'Envie o vídeo-base ou salve um avatar antes'}
+              onClick={() => agir('tudo', async () => void (await videoApi.produce(id)))}
+            >
+              Produzir tudo
+            </Button>
+          }
+        >
           <ul className="flex flex-col gap-2">
             {ETAPAS.map((etapa) => {
               const disponivel = motores.data?.[etapa.step] ?? false;
@@ -206,7 +245,7 @@ function Projeto({ id, onListChanged, onDeleted }: { id: number; onListChanged: 
                   </div>
                   {rodando && emAndamento ? (
                     <>
-                      <span className="label-code text-brand-soft" role="status">{ESTADO[emAndamento.state]}…</span>
+                      <Barra job={emAndamento} />
                       <Button onClick={() => agir('cancelar', () => videoApi.cancel(emAndamento.id))} icon={<X size={12} />}>
                         Cancelar
                       </Button>
@@ -270,6 +309,37 @@ function Projeto({ id, onListChanged, onDeleted }: { id: number; onListChanged: 
           }
         />
       </div>
+    </div>
+  );
+}
+
+/**
+ * Quanto da etapa já foi. Sem número do motor (fila, ou modelo ainda carregando), mostra o
+ * estado e o tempo: uma barra parada em 0% diria "travou" sobre algo que está andando.
+ */
+function Barra({ job }: { job: VideoJob }) {
+  if (job.progress === null) {
+    return (
+      <span className="label-code text-brand-soft" role="status">
+        {ESTADO[job.state]}… {job.startedAt ? duracao(job) : ''}
+      </span>
+    );
+  }
+  return (
+    <div className="flex min-w-[9rem] flex-1 items-center gap-2">
+      <div
+        className="h-2 flex-1 overflow-hidden rounded bg-surface-high"
+        role="progressbar"
+        aria-valuemin={0}
+        aria-valuemax={100}
+        aria-valuenow={job.progress}
+        aria-label={`Progresso da etapa ${job.step}`}
+      >
+        <div className="h-full bg-brand transition-[width] duration-500" style={{ width: `${job.progress}%` }} />
+      </div>
+      <span className="label-code w-20 text-right text-brand-soft">
+        {job.progress}% · {duracao(job)}
+      </span>
     </div>
   );
 }

@@ -71,11 +71,11 @@ public class IntegrationSettingsController {
         settings.save(SettingsService.INSTAGRAM_REDIRECT_URI, request.instagramRedirectUri());
         settings.save(SettingsService.INSTAGRAM_PUBLIC_BASE_URL, request.instagramPublicBaseUrl());
         settings.save(SettingsService.AI_API_KEY, request.aiApiKey());
-        settings.save(SettingsService.AI_PROVIDER, normalizeProvider(request.aiProvider()));
+        settings.save(SettingsService.AI_PROVIDER, oneOf(request.aiProvider(), AiAssistantService.PROVIDERS));
         settings.save(SettingsService.AI_BASE_URL, checkBaseUrl(request.aiBaseUrl()));
         settings.save(SettingsService.AI_MODEL, request.aiModel());
         settings.save(SettingsService.AI_BRAND_INSTRUCTIONS, request.aiBrandInstructions());
-        settings.save(SettingsService.AI_EFFORT, normalizeEffort(request.aiEffort()));
+        settings.save(SettingsService.AI_EFFORT, oneOf(request.aiEffort(), AiAssistantService.EFFORT_LEVELS));
         return current();
     }
 
@@ -85,7 +85,7 @@ public class IntegrationSettingsController {
                 !instagram.appSecret().isBlank(),
                 instagram.redirectUri(),
                 instagram.publicBaseUrl(),
-                ai.isEnabled(),
+                !ai.apiKey().isBlank(),
                 ai.provider(),
                 ai.baseUrl(),
                 ai.model(),
@@ -108,27 +108,15 @@ public class IntegrationSettingsController {
         return trimmed;
     }
 
-    /** Provedor desconhecido nao e gravado: o assistente continua no servico atual. */
-    private String normalizeProvider(String provider) {
-        if (provider == null) {
+    /**
+     * Valor fora da lista não é gravado (null = não mexer): o assistente continua no provedor
+     * e no esforço atuais em vez de ficar com uma opção que nenhum código entende.
+     */
+    private static String oneOf(String value, java.util.List<String> allowed) {
+        if (value == null) {
             return null;
         }
-        String normalized = provider.trim().toLowerCase();
-        if (normalized.isEmpty() || AiAssistantService.PROVIDERS.contains(normalized)) {
-            return normalized;
-        }
-        return null;
-    }
-
-    /** Nível desconhecido não é gravado: o assistente continua no esforço atual. */
-    private String normalizeEffort(String effort) {
-        if (effort == null) {
-            return null;
-        }
-        String normalized = effort.trim().toLowerCase();
-        if (normalized.isEmpty() || AiAssistantService.EFFORT_LEVELS.contains(normalized)) {
-            return normalized;
-        }
-        return null;
+        String normalized = value.trim().toLowerCase();
+        return normalized.isEmpty() || allowed.contains(normalized) ? normalized : null;
     }
 }

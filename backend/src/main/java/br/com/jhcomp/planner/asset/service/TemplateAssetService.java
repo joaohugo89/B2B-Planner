@@ -27,6 +27,10 @@ public class TemplateAssetService {
 
     /** Grava o arquivo enviado pelo site e registra o template apontando para ele. */
     public TemplateAsset createFromUpload(AssetRequest request, MultipartFile file) {
+        // Antes de gravar: recusar só no INSERT deixava o arquivo no disco sem dono.
+        if (repository.existsByCode(request.code())) {
+            throw new IllegalArgumentException("Já existe um template com o código " + request.code() + ".");
+        }
         String stored = storage.store(file);
         String url = storage.publicUrl(stored);
 

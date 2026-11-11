@@ -129,7 +129,8 @@ class HashtagBlockControllerTest {
                         .header("Authorization", bearer())
                         .contentType(MediaType.APPLICATION_JSON)
                         .content("{\"name\":\"Local\",\"hashtags\":\"#SaoPaulo\"}"))
-                .andExpect(status().isConflict());
+                .andExpect(status().isConflict())
+                .andExpect(jsonPath("$.message").value("Já existe um bloco chamado Local."));
     }
 
     @Test

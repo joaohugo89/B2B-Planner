@@ -2,7 +2,6 @@ import { useState } from 'react';
 import { Check, Hash, Pencil, Plus, Tags, Trash2, X } from 'lucide-react';
 import { hashtagBlocksApi, settingsApi, tonesApi, type HashtagBlock, type Tone } from '../api/services';
 import { describeError } from '../api/client';
-import { useAuth } from '../auth/AuthContext';
 
 const EMPTY = { id: null as number | null, code: '', label: '', description: '' };
 
@@ -22,7 +21,6 @@ export function ToneManager({
   onBlocksChanged: () => void;
   onHashtagsChanged: (value: string) => void;
 }) {
-  const { session } = useAuth();
   const [form, setForm] = useState<typeof EMPTY | null>(null);
   const [confirming, setConfirming] = useState<number | null>(null);
   const [error, setError] = useState<string | null>(null);
@@ -93,16 +91,13 @@ export function ToneManager({
           <input
             value={hashtags}
             onChange={(event) => setHashtags(event.target.value)}
-            disabled={!session}
             placeholder="#JHComp #AssistenciaTecnica"
             className="min-w-[16rem] flex-1 rounded bg-surface-lowest px-3 py-2 font-mono text-xs outline-none disabled:opacity-60"
           />
-          {session && (
-            <button type="button" className="btn-primary" onClick={saveHashtags} disabled={savingTags || hashtags === globalHashtags}>
-              <Check size={12} />
-              {savingTags ? 'Salvando…' : tagsSaved ? 'Salvo!' : 'Salvar tags'}
-            </button>
-          )}
+          <button type="button" className="btn-primary" onClick={saveHashtags} disabled={savingTags || hashtags === globalHashtags}>
+            <Check size={12} />
+            {savingTags ? 'Salvando…' : tagsSaved ? 'Salvo!' : 'Salvar tags'}
+          </button>
         </div>
       </div>
 
@@ -117,7 +112,7 @@ export function ToneManager({
       <div className="flex flex-col gap-3">
         <div className="flex items-center justify-between">
           <span className="label-code text-brand-soft">Tons de copy</span>
-          {session && !form && (
+          {!form && (
             <button type="button" className="btn-ghost" onClick={() => setForm({ ...EMPTY })}>
               <Plus size={12} />
               Novo tom
@@ -168,8 +163,7 @@ export function ToneManager({
               <span className="flex-1 truncate text-xs text-content-muted">{tone.description}</span>
               <span className="label-code text-content-muted">{tone.usageCount} legenda(s)</span>
 
-              {session && (
-                confirming === tone.id ? (
+              {confirming === tone.id ? (
                   <div className="flex items-center gap-1">
                     <button type="button" className="btn-primary px-2" onClick={() => removeTone(tone)} disabled={busy}>
                       Apagar
@@ -193,14 +187,12 @@ export function ToneManager({
                       <Trash2 size={12} />
                     </button>
                   </div>
-                )
-              )}
+                )}
             </div>
           ))}
         </div>
 
         {error && <p className="text-sm text-brand-soft">{error}</p>}
-        {!session && <p className="text-sm text-content-muted">Entre com sua conta para editar tons e hashtags.</p>}
       </div>
     </section>
   );
@@ -210,7 +202,6 @@ const EMPTY_BLOCK = { id: null as number | null, name: '', hashtags: '' };
 
 /** Cadastro dos blocos de hashtags por categoria usados no formulário de legenda. */
 function BlockManager({ blocks, onChanged }: { blocks: HashtagBlock[]; onChanged: () => void }) {
-  const { session } = useAuth();
   const [form, setForm] = useState<typeof EMPTY_BLOCK | null>(null);
   const [confirming, setConfirming] = useState<number | null>(null);
   const [busy, setBusy] = useState(false);
@@ -254,7 +245,7 @@ function BlockManager({ blocks, onChanged }: { blocks: HashtagBlock[]; onChanged
           <Hash size={14} className="text-brand" />
           <span className="label-code text-brand-soft">Blocos de hashtags por categoria</span>
         </div>
-        {session && !form && (
+        {!form && (
           <button type="button" className="btn-ghost" onClick={() => setForm({ ...EMPTY_BLOCK })}>
             <Plus size={12} />
             Novo bloco
@@ -304,8 +295,7 @@ function BlockManager({ blocks, onChanged }: { blocks: HashtagBlock[]; onChanged
             <span className="flex-1 truncate font-mono text-xs text-content-muted">{block.hashtags}</span>
             <span className="label-code text-content-muted">{block.tagCount} tag(s)</span>
 
-            {session && (
-              confirming === block.id ? (
+            {confirming === block.id ? (
                 <div className="flex items-center gap-1">
                   <button type="button" className="btn-primary px-2" onClick={() => remove(block)} disabled={busy}>
                     Apagar
@@ -327,8 +317,7 @@ function BlockManager({ blocks, onChanged }: { blocks: HashtagBlock[]; onChanged
                     <Trash2 size={12} />
                   </button>
                 </div>
-              )
-            )}
+              )}
           </div>
         ))}
       </div>

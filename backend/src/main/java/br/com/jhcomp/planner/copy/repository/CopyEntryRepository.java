@@ -12,4 +12,6 @@ public interface CopyEntryRepository extends JpaRepository<CopyEntry, Long> {
     List<CopyEntry> findByToneOrderByPostCodeAsc(String tone);
 
     List<CopyEntry> findByPostCodeOrderByIdAsc(String postCode);
+
+    long countByTone(String tone);
 }

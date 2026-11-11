@@ -145,7 +145,6 @@ function drawCtaBar(
 ) {
   if (!text.trim()) return 0;
   const area = safeArea(ratio);
-  const palette = paletteFor(theme);
   const height = Math.round(92 * scale);
   const y = area.height - area.bottom - height;
 
@@ -180,7 +179,6 @@ function drawCtaBar(
   ctx.stroke();
   ctx.restore();
 
-  void palette;
   return height + 28;
 }
 

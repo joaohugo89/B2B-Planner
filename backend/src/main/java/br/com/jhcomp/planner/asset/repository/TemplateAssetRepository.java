@@ -6,11 +6,8 @@ import br.com.jhcomp.planner.asset.domain.TemplateAsset;
 import org.springframework.data.jpa.repository.JpaRepository;
 
 import java.util.List;
-import java.util.Optional;
 
 public interface TemplateAssetRepository extends JpaRepository<TemplateAsset, Long> {
-
-    Optional<TemplateAsset> findByCode(String code);
 
     boolean existsByCode(String code);
 

@@ -122,13 +122,19 @@ public class GlobalExceptionHandler {
                 .body(ApiError.of(403, "FORBIDDEN", "Acesso negado.", List.of()));
     }
 
-    /** Erros que o próprio Spring MVC já classificou (405, 415, 406...). */
+    /**
+     * Erros que o Spring já classificou (405, 415...) e os ResponseStatusException do código.
+     * O motivo escrito no código ("Já existe um bloco chamado X") vai para a tela; antes ela
+     * recebia só o nome do status, "Conflict", e não dava para saber o que corrigir.
+     */
     @ExceptionHandler(ErrorResponseException.class)
     public ResponseEntity<ApiError> handleErrorResponse(ErrorResponseException ex) {
         HttpStatus status = HttpStatus.valueOf(ex.getStatusCode().value());
         ErrorLog.registrar(status.value(), status.name(), ex);
+        String detalhe = ex.getBody().getDetail();
+        String mensagem = detalhe == null || detalhe.isBlank() ? status.getReasonPhrase() : detalhe;
         return ResponseEntity.status(status)
-                .body(ApiError.of(status.value(), status.name(), status.getReasonPhrase(), List.of()));
+                .body(ApiError.of(status.value(), status.name(), mensagem, List.of()));
     }
 
     @ExceptionHandler(Exception.class)

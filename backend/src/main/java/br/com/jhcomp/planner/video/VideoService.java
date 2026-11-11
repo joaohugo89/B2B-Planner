@@ -48,7 +48,27 @@ public class VideoService {
     public VideoProject create(ProjectRequest request) {
         VideoProject project = new VideoProject();
         apply(project, request);
-        return projects.save(project);
+        project = projects.save(project);
+        // Com avatar salvo, o projeto já nasce com vídeo-base: basta o roteiro.
+        String avatar = storage.copyAvatarTo(project.getId());
+        if (avatar != null) {
+            project.replace(VideoFile.BASE, avatar);
+        }
+        return project;
+    }
+
+    @Transactional(readOnly = true)
+    public boolean hasAvatar() {
+        return storage.avatar().isPresent();
+    }
+
+    /** Guarda o vídeo-base deste projeto como avatar dos próximos. */
+    public void saveAvatar(Long id) {
+        VideoProject project = get(id);
+        if (!project.has(VideoFile.BASE)) {
+            throw new IllegalArgumentException("Envie o vídeo-base antes de salvá-lo como avatar.");
+        }
+        storage.saveAvatar(id, project.file(VideoFile.BASE));
     }
 
     public VideoProject update(Long id, ProjectRequest request) {

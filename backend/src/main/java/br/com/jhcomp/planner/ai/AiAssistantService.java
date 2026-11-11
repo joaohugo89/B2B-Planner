@@ -88,9 +88,18 @@ public class AiAssistantService {
         return settings.valueOr(SettingsService.AI_BRAND_INSTRUCTIONS, "");
     }
 
+    /**
+     * Ligado com chave, ou sem ela quando o serviço roda na própria máquina: um Ollama local
+     * não pede chave, e exigir uma obrigava a digitar qualquer coisa no campo.
+     */
     public boolean isEnabled() {
         String key = apiKey();
-        return key != null && !key.isBlank();
+        return (key != null && !key.isBlank()) || ("openai".equals(provider()) && isLocal(baseUrl()));
+    }
+
+    private static boolean isLocal(String url) {
+        String host = url == null ? "" : url.trim().toLowerCase();
+        return host.matches("https?://(localhost|127\\.0\\.0\\.1|host\\.docker\\.internal)(:\\d+)?(/.*)?");
     }
 
     public String chat(List<ChatMessage> history) {
@@ -184,7 +193,7 @@ public class AiAssistantService {
     private AiProvider current() {
         if (!isEnabled()) {
             throw new AiUnavailableException(
-                    "Assistente desativado: informe a chave de API na aba da sua conta para usá-lo.");
+                    "Assistente desativado: informe a chave de API no painel da conta para usá-lo.");
         }
         return providers.get(provider());
     }

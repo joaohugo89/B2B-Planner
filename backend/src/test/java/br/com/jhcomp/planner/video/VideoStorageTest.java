@@ -73,6 +73,33 @@ class VideoStorageTest {
     }
 
     @Test
+    @DisplayName("o avatar salvo de um projeto vira o vídeo-base dos próximos")
+    void avatarEReaproveitado() {
+        assertThat(storage.avatar()).isEmpty();
+        assertThat(storage.copyAvatarTo(8L)).isNull();
+
+        String base = storage.store(7L, VideoFile.BASE, arquivo("eu.mov"));
+        storage.saveAvatar(7L, base);
+        // Apagar o projeto de origem não leva o avatar junto.
+        storage.deleteProject(7L);
+
+        String copia = storage.copyAvatarTo(8L);
+        assertThat(copia).matches("base-[0-9a-f-]{36}\\.mov");
+        assertThat(root.resolve("8").resolve(copia)).hasBinaryContent(new byte[] {1, 2, 3});
+    }
+
+    @Test
+    @DisplayName("salvar outro avatar substitui o anterior: há sempre um só")
+    void avatarNovoSubstitui() throws Exception {
+        storage.saveAvatar(7L, storage.store(7L, VideoFile.BASE, arquivo("antigo.mov")));
+        storage.saveAvatar(7L, storage.store(7L, VideoFile.BASE, arquivo("novo.mp4")));
+
+        try (var arquivos = Files.list(root.resolve("avatar"))) {
+            assertThat(arquivos.map(p -> p.getFileName().toString())).containsExactly("base.mp4");
+        }
+    }
+
+    @Test
     @DisplayName("trocar o áudio invalida sincronia, legenda e final — e deixa o vídeo-base")
     void trocarAudioInvalidaOQueDependeDele() {
         VideoProject project = new VideoProject();

@@ -30,6 +30,9 @@ const REFRESH_TOKEN_KEY = 'jhcomp.refreshToken';
 const EXPIRES_AT_KEY = 'jhcomp.expiresAt';
 let refreshing: Promise<string | null> | null = null;
 
+/** Disparado quando o refresh token não vale mais; o AuthProvider encerra a sessão local. */
+export const SESSAO_EXPIRADA = 'jhcomp:sessao-expirada';
+
 /** Considera expirado com 60s de folga, para não disparar requests com token no limite. */
 function isExpiringSoon(): boolean {
   if (!localStorage.getItem(ACCESS_TOKEN_KEY)) return false;
@@ -43,13 +46,16 @@ async function refreshAccessToken(): Promise<string | null> {
   if (!refreshToken) return null;
 
   refreshing ??= axios
-    .post<{ accessToken: string; refreshToken: string; expiresIn: number }>('/api/auth/refresh', { refreshToken })
+    // Pela mesma base da API: com o backend em outro domínio, '/api' fixo batia no frontend.
+    .post<{ accessToken: string; refreshToken: string; expiresIn: number }>(`${api.defaults.baseURL}/auth/refresh`, { refreshToken })
     .then(({ data }) => {
       tokenStorage.save(data.accessToken, data.refreshToken, data.expiresIn);
       return data.accessToken;
     })
     .catch(() => {
       tokenStorage.clear();
+      // Sem isto a tela continuava achando que havia sessão e toda chamada voltava 401.
+      window.dispatchEvent(new Event(SESSAO_EXPIRADA));
       return null;
     })
     .finally(() => {

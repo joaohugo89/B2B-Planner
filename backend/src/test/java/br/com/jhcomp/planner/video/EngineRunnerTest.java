@@ -34,7 +34,7 @@ class EngineRunnerTest {
     }
 
     private String rodar(String modo, Duration limite) {
-        return runner.run(motor(modo), dir, dir.resolve("saida.bin"), limite, processo -> { });
+        return runner.run(motor(modo), dir, dir.resolve("saida.bin"), limite, processo -> { }, porcento -> { });
     }
 
     @Test
@@ -69,7 +69,7 @@ class EngineRunnerTest {
         AtomicReference<Process> processo = new AtomicReference<>();
 
         assertThatThrownBy(() -> runner.run(motor("slow"), dir, dir.resolve("saida.bin"),
-                Duration.ofSeconds(2), processo::set))
+                Duration.ofSeconds(2), processo::set, porcento -> { }))
                 .isInstanceOf(EngineException.class)
                 .hasMessageContaining("tempo limite");
 
@@ -80,11 +80,22 @@ class EngineRunnerTest {
     @DisplayName("executável que não existe vira erro claro, não exceção de sistema")
     void executavelAusente() {
         assertThatThrownBy(() -> runner.run(List.of("motor-que-nao-existe-jhcomp"), dir,
-                dir.resolve("saida.bin"), Duration.ofSeconds(5), p -> { }))
+                dir.resolve("saida.bin"), Duration.ofSeconds(5), p -> { }, porcento -> { }))
                 .isInstanceOf(EngineException.class)
                 .hasMessageContaining("instalado");
 
         assertThat(runner.responds("motor-que-nao-existe-jhcomp", "-version")).isFalse();
+    }
+
+    @Test
+    @DisplayName("a porcentagem escrita pelo motor chega a quem acompanha, enquanto ele roda")
+    void progressoAoVivo() {
+        List<Integer> vistos = new java.util.concurrent.CopyOnWriteArrayList<>();
+
+        runner.run(motor("progress"), dir, dir.resolve("saida.bin"), Duration.ofSeconds(30),
+                processo -> { }, vistos::add);
+
+        assertThat(vistos).isNotEmpty().isSubsetOf(40, 80);
     }
 
     @Test

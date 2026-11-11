@@ -17,10 +17,10 @@ import {
   Wand2,
 } from 'lucide-react';
 import { Link } from 'react-router-dom';
-import { assetsApi, copiesApi, postsApi } from '../api/services';
+import { assetsApi, copiesApi, postsApi, proximoCodigo } from '../api/services';
 import { describeError } from '../api/client';
 import { useApi } from '../api/useApi';
-import { useAuth } from '../auth/AuthContext';
+import { Field, TextArea } from '../components/ui';
 import { ErrorState, LoadingState, PageHeader } from '../components/primitives';
 import { DraftsPanel } from '../components/DraftsPanel';
 import { PhotoPicker } from '../components/PhotoPicker';
@@ -62,16 +62,6 @@ const FIRST_SLIDE: PostSpec = {
   scrim: 0.9,
 };
 
-/** Próximo código livre no planner: 01, 02, 03… */
-function nextPostCode(existing: string[]): string {
-  const used = new Set(existing);
-  for (let i = 1; i < 100; i += 1) {
-    const code = String(i).padStart(2, '0');
-    if (!used.has(code)) return code;
-  }
-  return String(Date.now()).slice(-4);
-}
-
 function slugify(text: string): string {
   return (
     text
@@ -103,7 +93,6 @@ export function PostStudioPage() {
   const assets = useApi(() => assetsApi.list({ kind: 'BACKGROUND' }), []);
   const posts = useApi(() => postsApi.list(), []);
   const copies = useApi(() => copiesApi.list(), []);
-  const { session } = useAuth();
 
   const [slides, setSlides] = useState<PostSpec[]>([FIRST_SLIDE]);
   const [index, setIndex] = useState(0);
@@ -338,7 +327,7 @@ export function PostStudioPage() {
     try {
       const list = posts.data ?? (await postsApi.list());
       const target = sourcePost ? list.find((item) => item.id === sourcePost) ?? null : null;
-      const code = target?.code ?? nextPostCode(list.map((item) => item.code));
+      const code = target?.code ?? proximoCodigo(list.map((item) => item.code));
 
       const uploaded: string[] = [];
       for (let i = 0; i < slides.length; i += 1) {
@@ -430,7 +419,7 @@ export function PostStudioPage() {
       layout: i === 0 ? base.layout : 'SLIDE',
       eyebrow: i === 0 ? entry.strategy || base.eyebrow : base.eyebrow,
       headline: i === 0 ? entry.headline : paragraph.split(/[.:!?]/)[0].slice(0, 60),
-      body: i === 0 ? paragraph : paragraph,
+      body: paragraph,
       cta: i === paragraphs.length - 1 ? entry.cta ?? base.cta : '',
       badge: `${i + 1}/${paragraphs.length}`,
     }));
@@ -492,12 +481,10 @@ export function PostStudioPage() {
         description="Monte posts únicos ou carrosséis sobre os templates da marca, com os textos nas posições padrão, e baixe tudo pronto para publicar."
         actions={
           <div className="flex flex-wrap items-center gap-2">
-            {session && (
-              <button type="button" className="btn-ghost" onClick={saveToPlanner} disabled={Boolean(busy)}>
-                <Save size={12} />
-                {busy === 'save' ? 'Salvando…' : sourcePost ? 'Atualizar no planner' : 'Salvar no planner'}
-              </button>
-            )}
+            <button type="button" className="btn-ghost" onClick={saveToPlanner} disabled={Boolean(busy)}>
+              <Save size={12} />
+              {busy === 'save' ? 'Salvando…' : sourcePost ? 'Atualizar no planner' : 'Salvar no planner'}
+            </button>
             <button type="button" className="btn-primary" onClick={isCarousel ? downloadAll : downloadCurrent} disabled={Boolean(busy)}>
               <Download size={14} />
               {isCarousel ? `Baixar ${slides.length} slides` : 'Baixar PNG'}
@@ -711,8 +698,8 @@ export function PostStudioPage() {
             )}
 
             <Field label="Chapéu (linha vermelha)" value={spec.eyebrow} onChange={(v) => update('eyebrow', v)} />
-            <Field label="Manchete" value={spec.headline} onChange={(v) => update('headline', v)} textarea rows={2} />
-            <Field label="Apoio" value={spec.body} onChange={(v) => update('body', v)} textarea rows={3} />
+            <TextArea label="Manchete" value={spec.headline} onChange={(v) => update('headline', v)} rows={2} />
+            <TextArea label="Apoio" value={spec.body} onChange={(v) => update('body', v)} rows={3} />
 
             <div className="grid grid-cols-2 gap-3">
               <Field label="CTA (faixa inferior)" value={spec.cta} onChange={(v) => update('cta', v)} />
@@ -967,12 +954,6 @@ export function PostStudioPage() {
             </p>
           )}
 
-          {!session && (
-            <p className="panel p-3 text-sm text-content-muted">
-              Entre com sua conta para salvar no planner (o download continua liberado).
-            </p>
-          )}
-
           {renderError && <ErrorState message={renderError} />}
 
           <p className="text-sm text-content-muted">
@@ -1026,31 +1007,5 @@ function SizeControl({
       </button>
       <span className="w-12 text-right font-mono text-xs text-content-muted">{Math.round(value * 100)}%</span>
     </div>
-  );
-}
-
-function Field({
-  label,
-  value,
-  onChange,
-  textarea,
-  rows = 2,
-}: {
-  label: string;
-  value: string;
-  onChange: (value: string) => void;
-  textarea?: boolean;
-  rows?: number;
-}) {
-  const className = 'rounded bg-surface-lowest px-3 py-2 text-sm outline-none placeholder:text-content-muted/60';
-  return (
-    <label className="flex flex-col gap-1">
-      <span className="label-code text-content-muted">{label}</span>
-      {textarea ? (
-        <textarea rows={rows} value={value} onChange={(event) => onChange(event.target.value)} className={className} />
-      ) : (
-        <input value={value} onChange={(event) => onChange(event.target.value)} className={className} />
-      )}
-    </label>
   );
 }

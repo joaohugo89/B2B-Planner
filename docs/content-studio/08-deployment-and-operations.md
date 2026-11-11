@@ -2,14 +2,17 @@
 
 ## Onde o backend roda
 
-| Modo | Render (FFmpeg) | Motores de GPU | Quando usar |
+| Modo | Render (FFmpeg) | Motores de GPU | Como subir |
 |---|---|---|---|
-| Docker (como hoje) | Sim — FFmpeg e uma fonte para as legendas entraram na imagem | **Não** — um contêiner não inicia processo no host | Planner + render de vídeo com áudio enviado |
-| No host (`mvn spring-boot:run`) | Sim, com FFmpeg no PATH | Sim, via `wsl ...` | Pipeline completo com voz e sincronia |
+| Docker | Sim — FFmpeg e uma fonte para as legendas estão na imagem | **Não** — um contêiner não inicia processo no host | `docker compose ... up -d --build` |
+| Modo vídeo (no Windows) | Sim, com FFmpeg no PATH | Sim, via `wsl ...` | `scripts\video-local.ps1` |
 
-O banco pode continuar no contêiner nos dois casos (`docker-compose.banco.yml`). Quando
-for preciso ter backend em contêiner **e** motores de GPU, o caminho é o adaptador HTTP
-descrito em 03 — não foi construído.
+Nunca os dois ao mesmo tempo. No modo vídeo, o `docker-compose.video.yml` tira o backend do
+compose, e o frontend em contêiner (localhost:8090 e o domínio) passa a falar com o backend
+do Windows por `host.docker.internal`. Ver `docs/DOCKER.md`, seção "Modo vídeo".
+
+Ter backend em contêiner **e** motores de GPU exige o adaptador HTTP descrito em 03 — não
+foi construído.
 
 ## Configuração
 
@@ -86,9 +89,10 @@ Erros HTTP: `logs/erros-AAAA-MM-DD.log` (já existia). Saída de cada motor: os 
 
 ## Backup
 
-`scripts/backup.ps1` cobre o banco. A pasta `uploads/video` **não** entra nele e pode
-passar de dezenas de gigabytes. Recomendação: copiar só `final-*.mp4` e os vídeos-base; o
-restante é regenerável pelos jobs.
+`scripts/backup.ps1` copia o banco e toda a pasta `backend/uploads` — inclusive
+`uploads/video`, que pode passar de dezenas de gigabytes. Se o backup ficar grande demais, os
+arquivos `lipsync-*`, `audio-*` e `subtitles-*` são regeneráveis pelos jobs; o que não volta é
+o vídeo-base, o avatar (`uploads/video/avatar`) e os `final-*.mp4`.
 
 ## Espaço em disco
 

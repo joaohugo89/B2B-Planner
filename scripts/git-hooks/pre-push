@@ -29,6 +29,13 @@ ARQUIVOS="-f docker-compose.prod.yml -f docker-compose.local.yml"
 if grep -q '^CLOUDFLARE_TUNNEL_TOKEN=.\+' .env 2>/dev/null; then
     ARQUIVOS="$ARQUIVOS -f docker-compose.dominio.yml"
 fi
+# Modo vídeo (scripts/video-local.ps1): o backend roda no Windows. Sem o arquivo abaixo, o
+# compose ressuscitaria o backend em contêiner e haveria dois disputando a porta 8081.
+MODO_HOST=0
+if grep -q '^MODO_BACKEND=host' .env 2>/dev/null; then
+    ARQUIVOS="$ARQUIVOS -f docker-compose.video.yml"
+    MODO_HOST=1
+fi
 
 echo "pre-push: reconstruindo as imagens com o código deste push…"
 
@@ -42,4 +49,7 @@ if ! docker compose $ARQUIVOS --env-file .env up -d --build; then
 fi
 
 echo "pre-push: imagens atualizadas e containers no ar."
+if [ "$MODO_HOST" = 1 ]; then
+    echo "pre-push: o backend roda no Windows — reinicie o scripts/video-local.ps1 para ele pegar este código."
+fi
 exit 0

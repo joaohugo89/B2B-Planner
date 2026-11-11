@@ -42,14 +42,10 @@ export function AuthControl() {
 
   return (
     <>
-      <button type="button" className="btn-ghost" onClick={() => setPanelOpen(true)} title="Painel da conta">
-        <Settings2 size={12} />
-      </button>
       <button type="button" className="btn-ghost" onClick={() => setOpen(true)}>
         <LogIn size={12} />
         Entrar
       </button>
-      {panelOpen && <UserPanel onClose={() => setPanelOpen(false)} />}
       {open && createPortal(<LoginDialog onClose={() => setOpen(false)} />, document.body)}
     </>
   );

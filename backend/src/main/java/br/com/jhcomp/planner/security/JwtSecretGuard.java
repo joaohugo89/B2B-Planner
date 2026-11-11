@@ -6,7 +6,6 @@ import org.slf4j.LoggerFactory;
 import org.springframework.core.env.Environment;
 import org.springframework.stereotype.Component;
 
-import java.util.List;
 
 /**
  * Impede que a aplicação suba em produção com o segredo JWT de desenvolvimento.
@@ -32,7 +31,8 @@ public class JwtSecretGuard {
     @PostConstruct
     void verify() {
         String secret = properties.getSecret() == null ? "" : properties.getSecret().trim();
-        boolean dev = isDevProfile();
+        // Sem perfil ativo, vale o padrão do application.yml (dev).
+        boolean dev = environment.matchesProfiles("dev", "test");
 
         if (DEV_SECRET.equals(secret) || secret.isEmpty()) {
             if (!dev) {
@@ -49,11 +49,5 @@ public class JwtSecretGuard {
             throw new IllegalStateException("JWT_SECRET precisa de pelo menos " + MIN_LENGTH
                     + " caracteres para assinar tokens HS256 (recebidos: " + secret.length() + ").");
         }
-    }
-
-    private boolean isDevProfile() {
-        List<String> active = List.of(environment.getActiveProfiles());
-        List<String> profiles = active.isEmpty() ? List.of(environment.getDefaultProfiles()) : active;
-        return profiles.contains("dev") || profiles.contains("test");
     }
 }

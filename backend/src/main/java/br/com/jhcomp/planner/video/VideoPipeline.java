@@ -11,6 +11,7 @@ import org.springframework.stereotype.Service;
 
 import java.nio.file.Path;
 import java.time.Duration;
+import java.util.ArrayList;
 import java.util.EnumMap;
 import java.util.List;
 import java.util.Map;
@@ -39,6 +40,14 @@ public class VideoPipeline {
     /** Processos em execução, para o cancelamento alcançá-los. */
     private final Map<Long, Process> running = new ConcurrentHashMap<>();
     private final Set<Long> cancelled = ConcurrentHashMap.newKeySet();
+    /** Porcentagem dos jobs em execução. Só em memória: ao terminar, o estado do job basta. */
+    private final Map<Long, Integer> progress = new ConcurrentHashMap<>();
+    /**
+     * Projetos em "produzir tudo": ao concluir uma etapa, a próxima entra sozinha.
+     * shortcut: fica em memória, então um restart interrompe a sequência (o job em curso
+     * volta como erro e o usuário clica de novo). Persistir quando isso incomodar.
+     */
+    private final Set<Long> producing = ConcurrentHashMap.newKeySet();
 
     public VideoPipeline(VideoJobStore store, VideoStorage storage, EngineRunner runner,
                          VideoProperties properties, @Qualifier("videoJobExecutor") Executor executor) {
@@ -63,12 +72,67 @@ public class VideoPipeline {
         return engines;
     }
 
+    /** 0 a 100 enquanto o job roda e o motor informa; null fora disso. */
+    public Integer progress(Long jobId) {
+        return progress.get(jobId);
+    }
+
     /** Recusa na hora o que não tem como dar certo, em vez de falhar minutos depois na fila. */
     public VideoJob submit(Long projectId, Step step) {
         plan(store.project(projectId), step);
         VideoJob job = store.enqueue(projectId, step);
         executor.execute(() -> run(job.getId()));
         return job;
+    }
+
+    /**
+     * Do roteiro ao MP4 sem cliques no meio: roda em sequência todas as etapas que têm motor
+     * nesta instalação. Uma etapa que falha ou é cancelada interrompe a sequência.
+     */
+    public VideoJob produce(Long projectId) {
+        // Só o primeiro passo é conferido aqui; os outros dependem do que ele gerar.
+        // Marcado antes de enfileirar: um primeiro passo rápido não pode terminar sem ver a marca.
+        producing.add(projectId);
+        try {
+            return submit(projectId, sequence(properties).get(0));
+        } catch (RuntimeException ex) {
+            producing.remove(projectId);
+            throw ex;
+        }
+    }
+
+    /** As etapas configuradas, na ordem de produção. O render fecha sempre. */
+    static List<Step> sequence(VideoProperties properties) {
+        List<Step> etapas = new ArrayList<>();
+        if (!properties.getVoiceCommand().isBlank()) {
+            etapas.add(Step.VOZ);
+        }
+        if (!properties.getLipsyncCommand().isBlank()) {
+            etapas.add(Step.LIPSYNC);
+        }
+        if (!properties.getTranscribeCommand().isBlank()) {
+            etapas.add(Step.LEGENDAS);
+        }
+        etapas.add(Step.RENDER);
+        return etapas;
+    }
+
+    private void continueProduction(Long projectId, Step done) {
+        if (!producing.contains(projectId)) {
+            return;
+        }
+        List<Step> etapas = sequence(properties);
+        int proxima = etapas.indexOf(done) + 1;
+        if (proxima == 0 || proxima >= etapas.size()) {
+            producing.remove(projectId);
+            return;
+        }
+        try {
+            submit(projectId, etapas.get(proxima));
+        } catch (RuntimeException ex) {
+            log.warn("Produção do projeto {} parou antes de {}: {}", projectId, etapas.get(proxima), ex.getMessage());
+            producing.remove(projectId);
+        }
     }
 
     public void cancel(Long jobId) {
@@ -99,22 +163,27 @@ public class VideoPipeline {
 
             String engineLog = runner.run(plan.command(), workDir, workDir.resolve(output),
                     Duration.ofMinutes(properties.getStepTimeoutMinutes()),
-                    process -> running.put(jobId, process));
+                    process -> running.put(jobId, process),
+                    porcento -> progress.put(jobId, porcento));
 
             store.succeed(jobId, engineLog, plan.produces(), output)
                     .forEach(orfao -> storage.delete(projectId, orfao));
+            continueProduction(projectId, job.getStep());
         } catch (EngineException ex) {
+            producing.remove(projectId);
             storage.delete(projectId, output);
             boolean cancelado = cancelled.contains(jobId);
             store.fail(jobId, cancelado ? State.CANCELADO : State.ERRO,
                     cancelado ? "Cancelado." : ex.getMessage(), ex.log());
         } catch (RuntimeException ex) {
             log.warn("Job de vídeo {} falhou antes de o motor rodar", jobId, ex);
+            producing.remove(projectId);
             storage.delete(projectId, output);
             store.fail(jobId, State.ERRO, ex.getMessage(), null);
         } finally {
             running.remove(jobId);
             cancelled.remove(jobId);
+            progress.remove(jobId);
         }
     }
 

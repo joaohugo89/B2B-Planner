@@ -22,12 +22,6 @@ public class PostService {
         this.repository = repository;
     }
 
-    /** Lista completa, para quem está logado. */
-    @Transactional(readOnly = true)
-    public List<Post> list(PostStatus status, Audience audience) {
-        return list(status, audience, false);
-    }
-
     /**
      * @param somenteFinalizados deixa de fora os rascunhos; é o que um visitante enxerga.
      */

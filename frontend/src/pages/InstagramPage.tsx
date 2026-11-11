@@ -4,14 +4,12 @@ import { Activity, CheckCircle2, Instagram, Link2Off, Loader2, TriangleAlert } f
 import { instagramApi, type InstagramStatus } from '../api/services';
 import { describeError } from '../api/client';
 import { useApi } from '../api/useApi';
-import { useAuth } from '../auth/AuthContext';
 import { ErrorState, LoadingState, PageHeader } from '../components/primitives';
 
 const STATE_KEY = 'jhcomp.igState';
 
 export function InstagramPage() {
   const status = useApi(() => instagramApi.status(), []);
-  const { session } = useAuth();
   const [params, setParams] = useSearchParams();
   const navigate = useNavigate();
 
@@ -135,12 +133,10 @@ export function InstagramPage() {
                       <Activity size={12} />
                       {busy ? 'Testando…' : 'Testar conexão'}
                     </button>
-                    {session && (
-                      <button type="button" className="btn-ghost" onClick={disconnect} disabled={busy}>
-                        <Link2Off size={12} />
-                        Desconectar
-                      </button>
-                    )}
+                    <button type="button" className="btn-ghost" onClick={disconnect} disabled={busy}>
+                      <Link2Off size={12} />
+                      Desconectar
+                    </button>
                   </div>
 
                   {status.data.tokenValid === true && (
@@ -169,12 +165,11 @@ export function InstagramPage() {
                     type="button"
                     className="btn-primary self-start"
                     onClick={startConnect}
-                    disabled={busy || !status.data.configured || !session}
+                    disabled={busy || !status.data.configured}
                   >
                     {busy ? <Loader2 size={14} className="animate-spin" /> : <Instagram size={14} />}
                     {busy ? 'Conectando…' : 'Conectar conta do Instagram'}
                   </button>
-                  {!session && <span className="text-xs text-content-muted">Entre com sua conta para conectar.</span>}
                 </>
               )}
 

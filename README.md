@@ -73,9 +73,9 @@ CREATE USER jhcomp WITH LOGIN PASSWORD 'jhcomp';
 CREATE DATABASE jhcomp_planner OWNER jhcomp;
 ```
 
-O `scripts\migrar-para-postgres18.ps1` move os dados de um cluster para o outro (dump + restore +
-conferência das tabelas) e o `scripts\pg-local.ps1` cria um cluster descartável em `.pgdata\`, útil
-se você quiser um banco isolado de novo. Os arquivos de `backend\uploads\` **não** entram no dump —
+O `scripts\pg-local.ps1` cria um cluster descartável em `.pgdata\`, útil se você quiser um banco
+isolado. Para levar os dados de um banco a outro, use `pg_dump`/`pg_restore` (o `scripts\backup.ps1`
+e o `scripts\restore.ps1` fazem isso). Os arquivos de `backend\uploads\` **não** entram no dump —
 copie a pasta junto, senão os posts apontam para imagens que não existem.
 
 ## 1. Banco de dados — alternativas

@@ -15,7 +15,6 @@ import java.security.MessageDigest;
 import java.security.SecureRandom;
 import java.util.Arrays;
 import java.util.Base64;
-import java.util.List;
 
 /**
  * Cifra segredos em repouso com AES-GCM.
@@ -43,7 +42,7 @@ public class CryptoService {
     public CryptoService(EncryptionProperties properties, Environment environment) {
         String configured = properties.getKey() == null ? "" : properties.getKey().trim();
         if (configured.isEmpty()) {
-            if (!isDevProfile(environment)) {
+            if (!environment.matchesProfiles("dev", "test")) {
                 throw new IllegalStateException(
                         "JHCOMP_ENCRYPTION_KEY é obrigatória fora do perfil dev: defina uma chave AES "
                                 + "(32 bytes em Base64) para cifrar tokens e chaves de API em repouso.");
@@ -121,11 +120,5 @@ public class CryptoService {
         } catch (Exception ex) {
             throw new IllegalStateException("SHA-256 indisponível nesta JVM.", ex);
         }
-    }
-
-    private static boolean isDevProfile(Environment environment) {
-        List<String> active = List.of(environment.getActiveProfiles());
-        List<String> profiles = active.isEmpty() ? List.of(environment.getDefaultProfiles()) : active;
-        return profiles.contains("dev") || profiles.contains("test");
     }
 }

@@ -33,7 +33,7 @@ public class AiController {
         this.usage = usage;
     }
 
-    /** Público: a UI usa isto para esconder o chat quando não há chave configurada. */
+    /** A UI usa isto para esconder o chat quando o assistente não está configurado. */
     @GetMapping("/status")
     public AiStatus status() {
         return new AiStatus(service.isEnabled(), service.model(), service.provider());

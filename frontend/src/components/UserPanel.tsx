@@ -39,14 +39,10 @@ export function UserPanel({ onClose }: { onClose: () => void }) {
       .finally(() => setLoading(false));
   }, []);
 
-  // O consumo exige token: só busca quando há sessão, e falha em silêncio.
+  // O painel só abre com sessão; se o consumo falhar, a seção apenas não aparece.
   useEffect(() => {
-    if (!session) {
-      setUsage(null);
-      return;
-    }
     aiApi.usage().then(setUsage).catch(() => setUsage(null));
-  }, [session]);
+  }, []);
 
   return createPortal(
     <div
@@ -67,7 +63,7 @@ export function UserPanel({ onClose }: { onClose: () => void }) {
         <div className="flex flex-col gap-5 p-4">
           {/* Sessão */}
           <section className="panel flex flex-col gap-2 p-4">
-            {session ? (
+            {session && (
               <>
                 <span className="text-sm font-semibold">{session.name}</span>
                 <span className="label-code text-content-muted">{session.role}</span>
@@ -77,10 +73,6 @@ export function UserPanel({ onClose }: { onClose: () => void }) {
                   Sair
                 </button>
               </>
-            ) : (
-              <span className="text-sm text-content-muted">
-                Você não está conectado. Use o botão “Entrar” no topo para editar o planner.
-              </span>
             )}
           </section>
 
@@ -105,14 +97,13 @@ export function UserPanel({ onClose }: { onClose: () => void }) {
                 icon={<Bot size={14} />}
                 label="Assistente de IA"
                 ok={settings.aiReady}
-                detail={settings.aiReady ? `Ativo • ${settings.aiModel}` : 'Sem chave de API configurada'}
+                detail={settings.aiReady ? `Ativo • ${settings.aiModel}` : 'Falta a chave de API'}
               />
 
               {usage && <UsagePanel usage={usage} />}
 
               <IntegrationForm
                 settings={settings}
-                canEdit={Boolean(session)}
                 onSaved={(updated) => {
                   setSettings(updated);
                   instagramApi.status().then(setInstagram).catch(() => undefined);
@@ -237,7 +228,7 @@ const AI_PRESETS = [
     provider: 'openai',
     baseUrl: 'http://localhost:11434/v1',
     model: 'llama3.1',
-    hint: 'Custo zero e sem chave (escreva qualquer coisa no campo), mas consome bastante RAM.',
+    hint: 'Custo zero e sem chave: roda na sua máquina, mas disputa a placa de vídeo com o Video Studio.',
   },
   {
     id: 'custom',
@@ -259,11 +250,9 @@ function aiPresetAtual(provider: string, baseUrl: string) {
 
 function IntegrationForm({
   settings,
-  canEdit,
   onSaved,
 }: {
   settings: IntegrationSettings;
-  canEdit: boolean;
   onSaved: (updated: IntegrationSettings) => void;
 }) {
   const [appId, setAppId] = useState(settings.instagramAppId);
@@ -332,21 +321,19 @@ function IntegrationForm({
 
       <div className="flex flex-col gap-3">
         <span className="label-code text-content-muted">Instagram</span>
-        <Field label="App ID" value={appId} onChange={setAppId} disabled={!canEdit} />
+        <Field label="App ID" value={appId} onChange={setAppId} />
         <SecretField
           label="App Secret"
           value={appSecret}
           onChange={setAppSecret}
           defined={settings.instagramAppSecretDefined}
-          disabled={!canEdit}
           onClear={() => clearSecret('instagramAppSecret')}
         />
-        <Field label="URI de redirecionamento" value={redirectUri} onChange={setRedirectUri} disabled={!canEdit} />
+        <Field label="URI de redirecionamento" value={redirectUri} onChange={setRedirectUri} />
         <Field
           label="URL pública do backend"
           value={publicBaseUrl}
           onChange={setPublicBaseUrl}
-          disabled={!canEdit}
           hint="A Meta baixa as artes daqui — use ngrok ou seu domínio."
         />
       </div>
@@ -358,7 +345,6 @@ function IntegrationForm({
           <span className="label-code text-content-muted">Serviço</span>
           <select
             value={aiPresetAtual(aiProvider, aiBaseUrl)}
-            disabled={!canEdit}
             onChange={(event) => {
               const preset = AI_PRESETS.find((item) => item.id === event.target.value);
               if (!preset) return;
@@ -382,7 +368,6 @@ function IntegrationForm({
             label="URL base"
             value={aiBaseUrl}
             onChange={setAiBaseUrl}
-            disabled={!canEdit}
             hint="Vazio usa a da OpenAI. Deve terminar onde começa /chat/completions."
           />
         )}
@@ -392,16 +377,14 @@ function IntegrationForm({
           value={aiKey}
           onChange={setAiKey}
           defined={settings.aiApiKeyDefined}
-          disabled={!canEdit}
           onClear={() => clearSecret('aiApiKey')}
         />
-        <Field label="Modelo" value={aiModel} onChange={setAiModel} disabled={!canEdit} />
+        <Field label="Modelo" value={aiModel} onChange={setAiModel} />
 
         <label className="flex flex-col gap-1">
           <span className="label-code text-content-muted">Esforço do modelo</span>
           <select
             value={aiEffort}
-            disabled={!canEdit}
             onChange={(event) => setAiEffort(event.target.value)}
             className="rounded bg-surface-lowest px-3 py-2 font-mono text-xs outline-none disabled:opacity-60"
           >
@@ -415,7 +398,6 @@ function IntegrationForm({
           <span className="label-code text-content-muted">Instruções extras da marca</span>
           <textarea
             value={aiBrandInstructions}
-            disabled={!canEdit}
             rows={5}
             placeholder="Ex.: evite emojis no título; cite sempre o prazo médio de atendimento."
             onChange={(event) => setAiBrandInstructions(event.target.value)}
@@ -429,14 +411,10 @@ function IntegrationForm({
 
       {error && <p className="text-sm text-brand-soft">{error}</p>}
 
-      {canEdit ? (
-        <button type="button" className="btn-primary self-start" onClick={save} disabled={busy}>
-          <Save size={14} />
-          {busy ? 'Salvando…' : saved ? 'Salvo!' : 'Salvar chaves'}
-        </button>
-      ) : (
-        <span className="text-xs text-content-muted">Entre com sua conta para editar as chaves.</span>
-      )}
+      <button type="button" className="btn-primary self-start" onClick={save} disabled={busy}>
+        <Save size={14} />
+        {busy ? 'Salvando…' : saved ? 'Salvo!' : 'Salvar chaves'}
+      </button>
     </section>
   );
 }

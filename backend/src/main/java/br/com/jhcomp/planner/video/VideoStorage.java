@@ -14,7 +14,9 @@ import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.nio.file.StandardCopyOption;
 import java.util.Locale;
+import java.util.Optional;
 import java.util.UUID;
+import java.util.stream.Stream;
 
 /**
  * Os arquivos de vídeo, uma pasta por projeto.
@@ -101,6 +103,56 @@ public class VideoStorage {
             throw new IllegalArgumentException("Nome de arquivo inválido.");
         }
         return target;
+    }
+
+    /**
+     * O avatar: um vídeo-base guardado fora dos projetos, para não ser enviado de novo a cada
+     * vídeo. Há um só — o sistema é de uma pessoa —, e salvar outro substitui o anterior.
+     */
+    public void saveAvatar(Long projectId, String baseName) {
+        Path origem = existing(projectId, baseName);
+        Path pasta = avatarDir();
+        try {
+            Files.createDirectories(pasta);
+            Optional<Path> anterior = avatar();
+            if (anterior.isPresent()) {
+                Files.delete(anterior.get());
+            }
+            Files.copy(origem, pasta.resolve("base." + StringUtils.getFilenameExtension(baseName)));
+        } catch (IOException ex) {
+            throw new UncheckedIOException("Falha ao salvar o avatar.", ex);
+        }
+    }
+
+    public Optional<Path> avatar() {
+        if (!Files.isDirectory(avatarDir())) {
+            return Optional.empty();
+        }
+        try (Stream<Path> arquivos = Files.list(avatarDir())) {
+            return arquivos.filter(Files::isRegularFile).findFirst();
+        } catch (IOException ex) {
+            throw new UncheckedIOException("Falha ao ler a pasta do avatar.", ex);
+        }
+    }
+
+    /** Copia o avatar para o projeto como vídeo-base; devolve o nome gravado, ou null sem avatar. */
+    public String copyAvatarTo(Long projectId) {
+        Optional<Path> avatar = avatar();
+        if (avatar.isEmpty()) {
+            return null;
+        }
+        String name = newName(VideoFile.BASE,
+                StringUtils.getFilenameExtension(avatar.get().getFileName().toString()));
+        try {
+            Files.copy(avatar.get(), resolve(projectId, name));
+        } catch (IOException ex) {
+            throw new UncheckedIOException("Falha ao copiar o avatar para o projeto.", ex);
+        }
+        return name;
+    }
+
+    private Path avatarDir() {
+        return root.resolve("avatar");
     }
 
     public void delete(Long projectId, String name) {

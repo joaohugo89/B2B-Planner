@@ -80,11 +80,6 @@ public class PublishStateStore {
         posts.save(post);
     }
 
-    @Transactional(readOnly = true)
-    public Post find(Long postId) {
-        return require(postId);
-    }
-
     /**
      * Destrava um post deixado em PUBLICANDO por tempo demais — thread travada, ou um restart
      * entre o início e o fim da tarefa. Devolve o post já atualizado quando houve destrave.

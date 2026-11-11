@@ -3,7 +3,6 @@ import { ImagePlus, RotateCcw, Trash2, Upload } from 'lucide-react';
 import { assetsApi } from '../api/services';
 import { describeError } from '../api/client';
 import { useApi } from '../api/useApi';
-import { useAuth } from '../auth/AuthContext';
 import type { PhotoMode } from '../editor/layouts';
 import { assetUrl } from '../api/assetUrl';
 
@@ -31,7 +30,6 @@ export function PhotoPicker({
     offsetY?: number;
   }) => void;
 }) {
-  const { session } = useAuth();
   const photos = useApi(() => assetsApi.list({ kind: 'FOTO' }), []);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -70,8 +68,7 @@ export function PhotoPicker({
         )}
       </div>
 
-      {session ? (
-        <label className="flex items-center gap-2">
+      <label className="flex items-center gap-2">
           <input
             key={inputKey}
             type="file"
@@ -84,10 +81,7 @@ export function PhotoPicker({
             className="flex-1 rounded bg-surface-lowest px-3 py-2 text-xs file:mr-3 file:rounded file:border-0 file:bg-surface-high file:px-3 file:py-1 file:text-content"
           />
           {busy && <Upload size={14} className="animate-pulse text-brand" />}
-        </label>
-      ) : (
-        <p className="text-sm text-content-muted">Entre com sua conta para enviar fotos.</p>
-      )}
+      </label>
 
       {photoUrl && (
         <>
