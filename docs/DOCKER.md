@@ -203,14 +203,19 @@ Docker, que o backend chama por HTTP:
 | Banco, backend, frontend (localhost:8090) e túnel do domínio | Docker | Sempre (sobem sozinhos com o Docker Desktop) |
 | Servidor de motores (porta 8095, só desta máquina) | Windows | Só para gerar voz, sincronia e legendas |
 
-Parado, o servidor quase não custa nada — cada motor é um processo que nasce no pedido e
-devolve a placa de vídeo ao terminar —, então ele fica sempre rodando, escondido:
+Os motores acompanham o Docker: ligam quando o backend está no ar e se desligam sozinhos
+quando ele some — com o Docker Desktop fechado, nada dos motores fica na memória, e o WSL
+(VmmemWSL) também encerra. Para isso, uma vez só:
 
 ```powershell
-.\scripts\motores.ps1 -IniciarAoEntrar      # liga sozinho ao entrar no Windows (uma vez só)
-.\scripts\motores.ps1 -Oculto               # liga agora, sem janela
-.\scripts\motores.ps1 -NaoIniciarAoEntrar   # desfaz o primeiro
+.\scripts\motores.ps1 -IniciarAoEntrar      # tarefa "JH.COMP motores", a cada 2 min, sem janela
+.\scripts\motores.ps1 -NaoIniciarAoEntrar   # desfaz
+.\scripts\motores.ps1                       # numa janela, para ver a saída
 ```
+
+A tarefa só liga o servidor quando o backend responde na porta 8081; quem desliga é o
+próprio servidor, depois de duas checagens seguidas (30 s cada) sem o backend. Abrindo o
+Docker, os motores voltam em até 2 minutos.
 
 Ligar e desligar no dia a dia é o botão **Motores de IA** do Video Studio: desligado, o
 servidor recusa trabalho novo, mas continua de pé para receber o "ligar" de volta. Se ele

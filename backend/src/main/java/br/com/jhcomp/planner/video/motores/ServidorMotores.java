@@ -101,6 +101,48 @@ public final class ServidorMotores {
         servidor.iniciar(new InetSocketAddress(InetAddress.getLoopbackAddress(), porta));
         System.out.println("Motores no ar em 127.0.0.1:" + porta + " — etapas " + modelos.keySet()
                 + ", pasta " + servidor.pasta);
+
+        int portaBackend = Integer.parseInt(ambiente("MOTORES_BACKEND_PORTA", "0"));
+        if (portaBackend > 0) {
+            servidor.vigiarBackend(portaBackend, Duration.ofSeconds(Long.parseLong(ambiente("MOTORES_VIGIA_SEG", "30"))));
+        }
+    }
+
+    /**
+     * Sai quando o backend some — o Docker Desktop foi fechado —, para não deixar memória presa
+     * com ninguém para chamar. Duas checagens seguidas sem resposta, para um restart do
+     * contêiner não derrubar os motores. Quem liga de novo é a checagem do motores.ps1.
+     */
+    void vigiarBackend(int portaBackend, Duration intervalo) {
+        Thread vigia = new Thread(() -> {
+            int falhas = 0;
+            while (falhas < 2) {
+                try {
+                    Thread.sleep(intervalo.toMillis());
+                } catch (InterruptedException ex) {
+                    return;
+                }
+                falhas = respondeLocal(portaBackend) ? 0 : falhas + 1;
+            }
+            synchronized (this) {
+                if (atual != null) {
+                    encerrar(atual.processo());
+                }
+            }
+            System.out.println("Backend fora do ar (Docker fechado?): motores desligados.");
+            System.exit(0);
+        }, "motor-vigia-backend");
+        vigia.setDaemon(true);
+        vigia.start();
+    }
+
+    private static boolean respondeLocal(int porta) {
+        try (java.net.Socket socket = new java.net.Socket()) {
+            socket.connect(new InetSocketAddress(InetAddress.getLoopbackAddress(), porta), 2_000);
+            return true;
+        } catch (IOException ex) {
+            return false;
+        }
     }
 
     /** Só no loopback: o Docker chega por host.docker.internal; a rede local, não. */
