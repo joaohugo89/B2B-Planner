@@ -5,12 +5,12 @@ export const BRAND = {
   red: '#ff5354',
   redDeep: '#c41a24',
   ink: '#0c0e11',
-  inkSoft: 'rgba(12, 14, 17, 0.82)',
-  light: '#e2e2e6',
-  lightMuted: '#c5c6c9',
-  darkText: '#111317',
-  darkMuted: '#3f4247',
-  paper: 'rgba(255, 255, 255, 0.86)',
+  inkSoft: 'rgba(12, 14, 17, 0.9)',
+  light: '#ffffff',
+  lightMuted: '#eceef1',
+  darkText: '#0b0c0f',
+  darkMuted: '#1d1f23',
+  paper: 'rgba(255, 255, 255, 0.95)',
 };
 
 export const FONTS = {
@@ -48,6 +48,7 @@ async function carregarFontes(): Promise<void> {
     '800 72px Syne',
     '700 32px Syne',
     '500 28px "Plus Jakarta Sans"',
+    '600 28px "Plus Jakarta Sans"',
     '700 20px "JetBrains Mono"',
   ];
   await Promise.all(faces.map((font) => document.fonts.load(font, 'JH.COMP')));
@@ -276,13 +277,13 @@ export function drawScrim(
 
   const gradient = ctx.createLinearGradient(0, 0, 0, height);
   if (theme === 'DARK') {
-    gradient.addColorStop(0, `rgba(12, 14, 17, ${0.35 * strength})`);
-    gradient.addColorStop(0.45, `rgba(12, 14, 17, ${0.55 * strength})`);
-    gradient.addColorStop(1, `rgba(12, 14, 17, ${0.92 * strength})`);
+    gradient.addColorStop(0, `rgba(12, 14, 17, ${0.45 * strength})`);
+    gradient.addColorStop(0.45, `rgba(12, 14, 17, ${0.72 * strength})`);
+    gradient.addColorStop(1, `rgba(12, 14, 17, ${0.96 * strength})`);
   } else {
-    gradient.addColorStop(0, `rgba(255, 255, 255, ${0.30 * strength})`);
-    gradient.addColorStop(0.45, `rgba(255, 255, 255, ${0.55 * strength})`);
-    gradient.addColorStop(1, `rgba(255, 255, 255, ${0.90 * strength})`);
+    gradient.addColorStop(0, `rgba(255, 255, 255, ${0.50 * strength})`);
+    gradient.addColorStop(0.45, `rgba(255, 255, 255, ${0.78 * strength})`);
+    gradient.addColorStop(1, `rgba(255, 255, 255, ${0.96 * strength})`);
   }
 
   ctx.fillStyle = gradient;

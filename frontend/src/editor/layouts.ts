@@ -140,7 +140,6 @@ function drawCtaBar(
   ctx: CanvasRenderingContext2D,
   text: string,
   ratio: Ratio,
-  theme: 'DARK' | 'LIGHT',
   scale: number,
 ) {
   if (!text.trim()) return 0;
@@ -150,14 +149,14 @@ function drawCtaBar(
 
   ctx.save();
   const gradient = ctx.createLinearGradient(area.side, y, area.side + area.innerWidth, y);
-  gradient.addColorStop(0, BRAND.red);
+  gradient.addColorStop(0, '#e0303a');
   gradient.addColorStop(1, BRAND.redDeep);
   ctx.fillStyle = gradient;
   roundedRect(ctx, area.side, y, area.innerWidth, height, 10);
   ctx.fill();
 
-  ctx.fillStyle = theme === 'DARK' ? '#2b0004' : '#ffffff';
-  ctx.font = `700 ${Math.round(26 * scale)}px ${FONTS.mono}`;
+  ctx.fillStyle = '#ffffff';
+  ctx.font = `700 ${Math.round(28 * scale)}px ${FONTS.mono}`;
   ctx.textAlign = 'left';
   ctx.textBaseline = 'middle';
   if ('letterSpacing' in ctx) {
@@ -168,7 +167,7 @@ function drawCtaBar(
   // Seta à direita.
   const arrowX = area.side + area.innerWidth - 44;
   const midY = y + height / 2;
-  ctx.strokeStyle = theme === 'DARK' ? '#2b0004' : '#ffffff';
+  ctx.strokeStyle = '#ffffff';
   ctx.lineWidth = 4;
   ctx.beginPath();
   ctx.moveTo(arrowX - 18, midY);
@@ -200,7 +199,7 @@ function drawEyebrow(
     y,
     maxWidth,
     align,
-    font: `700 ${Math.round(24 * scale)}px ${FONTS.mono}`,
+    font: `700 ${Math.round(26 * scale)}px ${FONTS.mono}`,
     color: palette.accent,
     lineHeight: Math.round(32 * scale),
     letterSpacing: '3px',
@@ -245,7 +244,7 @@ export async function renderPost(ctx: CanvasRenderingContext2D, spec: PostSpec):
     headerBottom = area.top + Math.round(44 * labelScale);
   }
 
-  const ctaHeight = drawCtaBar(ctx, spec.cta, spec.ratio, spec.theme, labelScale);
+  const ctaHeight = drawCtaBar(ctx, spec.cta, spec.ratio, labelScale);
   const contentBottom = area.height - area.bottom - ctaHeight;
 
   // Foto em destaque: quadro logo abaixo do cabeçalho, o texto desce para o espaço restante.
@@ -290,7 +289,7 @@ function textBlockMinHeight(ctx: CanvasRenderingContext2D, spec: PostSpec, area:
   );
 
   const eyebrow = spec.eyebrow.trim() ? Math.round(32 * lScale) + 14 : 0;
-  const bodyLine = Math.round(44 * bScale);
+  const bodyLine = Math.round(50 * bScale);
   const body = spec.body.trim() ? bodyLine * 2 + 34 : 0; // reserva ao menos duas linhas de apoio
 
   return eyebrow + headlineHeight + body + 72;
@@ -353,8 +352,8 @@ function drawHero(
   contentBottom: number,
 ) {
   const { headline: hScale, body: bScale, label: lScale } = resolveScale(spec);
-  const bodyFont = `500 ${Math.round(30 * bScale)}px ${FONTS.body}`;
-  const bodyLine = Math.round(44 * bScale);
+  const bodyFont = `600 ${Math.round(36 * bScale)}px ${FONTS.body}`;
+  const bodyLine = Math.round(50 * bScale);
 
   const headlineFont = (size: number) => `800 ${size}px ${FONTS.display}`;
   const size = fitFontSize(
@@ -478,7 +477,8 @@ function drawTopicos(
     Math.round(70 * hScale * 1.08),
     true,
   ) + (spec.eyebrow.trim() ? Math.round(32 * lScale) + 12 : 0) + 34;
-  const listHeight = items.length ? items.length * 100 : 0;
+  // O mesmo mínimo do card lá embaixo: estimar menos deixava o último item fora da arte.
+  const listHeight = items.length * (Math.round(96 * bScale) + 16);
 
   let y = placeBlock(spec, headerBottom + 56, contentBottom, headerHeight + listHeight);
 
@@ -515,8 +515,8 @@ function drawTopicos(
   const available = contentBottom - y - 8;
   const gap = 16;
   const cardHeight = Math.min(
-    Math.round(132 * bScale),
-    Math.max(Math.round(84 * bScale), (available - gap * (items.length - 1)) / items.length),
+    Math.round(156 * bScale),
+    Math.max(Math.round(96 * bScale), (available - gap * (items.length - 1)) / items.length),
   );
 
   items.forEach((item, index) => {
@@ -555,11 +555,11 @@ function drawTopicos(
     const titleHeight = drawTextBlock(ctx, {
       text: title.trim(),
       x: textX,
-      y: top + (detail ? cardHeight / 2 - 38 : cardHeight / 2 - 17),
+      y: top + (detail ? cardHeight / 2 - 40 : cardHeight / 2 - 17),
       maxWidth: textWidth,
-      font: `700 ${Math.round(30 * bScale)}px ${FONTS.body}`,
+      font: `700 ${Math.round(34 * bScale)}px ${FONTS.body}`,
       color: palette.text,
-      lineHeight: Math.round(36 * bScale),
+      lineHeight: Math.round(40 * bScale),
       maxLines: 2,
     });
 
@@ -567,11 +567,11 @@ function drawTopicos(
       drawTextBlock(ctx, {
         text: detail,
         x: textX,
-        y: top + cardHeight / 2 - 38 + titleHeight + 6,
+        y: top + cardHeight / 2 - 40 + titleHeight + 6,
         maxWidth: textWidth,
-        font: `500 ${Math.round(24 * bScale)}px ${FONTS.body}`,
+        font: `600 ${Math.round(28 * bScale)}px ${FONTS.body}`,
         color: palette.muted,
-        lineHeight: Math.round(30 * bScale),
+        lineHeight: Math.round(34 * bScale),
         maxLines: 2,
       });
     }
@@ -596,7 +596,7 @@ function drawSlide(
     Math.round(76 * hScale * 1.08),
     true,
   ) + (spec.eyebrow.trim() ? Math.round(32 * lScale) + 16 : 0) + 36
-    + measureTextBlock(ctx, spec.body, `500 ${Math.round(29 * bScale)}px ${FONTS.body}`, area.innerWidth - 64, Math.round(42 * bScale))
+    + measureTextBlock(ctx, spec.body, `600 ${Math.round(34 * bScale)}px ${FONTS.body}`, area.innerWidth - 64, Math.round(48 * bScale))
     + (spec.body.trim() ? 64 : 0);
 
   let y = placeBlock(spec, headerBottom + 64, contentBottom, estimated);
@@ -631,8 +631,8 @@ function drawSlide(
 
   if (spec.body.trim()) {
     const padding = 32;
-    const bodyFont = `500 ${Math.round(29 * bScale)}px ${FONTS.body}`;
-    const bodyLine = Math.round(42 * bScale);
+    const bodyFont = `600 ${Math.round(34 * bScale)}px ${FONTS.body}`;
+    const bodyLine = Math.round(48 * bScale);
     const textWidth = area.innerWidth - padding * 2;
     const textHeight = measureTextBlock(ctx, spec.body, bodyFont, textWidth, bodyLine);
     const boxHeight = Math.min(textHeight + padding * 2, contentBottom - y);
