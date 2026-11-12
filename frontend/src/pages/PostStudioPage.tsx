@@ -564,9 +564,9 @@ export function PostStudioPage() {
           />
         </div>
       ) : (
-      <div className="shell grid grid-cols-1 gap-8 py-10 lg:grid-cols-12">
+      <div className="shell grid grid-cols-1 items-start gap-5 py-6 lg:grid-cols-12">
         {/* Painel de edição */}
-        <div className="flex flex-col gap-4 lg:col-span-5">
+        <div className="flex flex-col gap-4 lg:col-span-5 xl:col-span-4">
           <section className="panel flex flex-col gap-3 p-4">
             <div className="flex items-center justify-between">
               <span className="label-code text-brand-soft">
@@ -616,64 +616,6 @@ export function PostStudioPage() {
             <p className="text-sm text-content-muted">
               Cada slide tem template, layout e textos próprios; a proporção vale para o carrossel inteiro.
             </p>
-          </section>
-
-          <section className="panel flex flex-col gap-3 p-4">
-            <span className="label-code text-brand-soft">Formato e layout</span>
-
-            <div className="grid grid-cols-2 gap-2">
-              {(['RATIO_4_5', 'RATIO_1_1'] as Ratio[]).map((ratio) => (
-                <button
-                  key={ratio}
-                  type="button"
-                  onClick={() => setRatio(ratio)}
-                  className={`label-code rounded px-3 py-2 transition ${
-                    spec.ratio === ratio ? 'bg-brand text-brand-ink' : 'bg-surface-high text-content-muted'
-                  }`}
-                >
-                  {ratio === 'RATIO_4_5' ? '1080×1350 (4:5)' : '1080×1080 (1:1)'}
-                </button>
-              ))}
-            </div>
-
-            <div className="grid grid-cols-3 gap-2">
-              {LAYOUTS.map((layout) => (
-                <button
-                  key={layout.id}
-                  type="button"
-                  title={layout.hint}
-                  onClick={() => update('layout', layout.id as LayoutId)}
-                  className={`label-code rounded px-3 py-2 transition ${
-                    spec.layout === layout.id ? 'bg-brand text-brand-ink' : 'bg-surface-high text-content-muted'
-                  }`}
-                >
-                  {layout.label}
-                </button>
-              ))}
-            </div>
-
-            <label className="flex items-center justify-between gap-3 text-sm text-content-muted">
-              Véu de legibilidade
-              <input
-                type="range"
-                min={0}
-                max={1}
-                step={0.05}
-                value={spec.scrim}
-                onChange={(event) => update('scrim', Number(event.target.value))}
-                className="w-40 accent-brand"
-              />
-            </label>
-
-            <label className="flex items-center gap-2 text-sm text-content-muted">
-              <input
-                type="checkbox"
-                checked={spec.showLogo}
-                onChange={(event) => update('showLogo', event.target.checked)}
-                className="accent-brand"
-              />
-              Mostrar selo JH no topo
-            </label>
           </section>
 
           <section className="panel flex flex-col gap-3 p-4">
@@ -890,6 +832,120 @@ export function PostStudioPage() {
             <p className="text-sm text-content-muted">O bloco nunca passa das margens seguras, mesmo no limite do ajuste.</p>
           </section>
 
+        </div>
+
+        {/* Prévia */}
+        {/* A prévia ocupa duas linhas da grade e acompanha a rolagem: os controles dos dois lados
+            sempre têm o slide à vista. */}
+        <div className="flex flex-col gap-3 lg:sticky lg:top-4 lg:col-span-7 lg:row-span-2 xl:col-span-5">
+          <div className="flex items-center justify-between">
+            <span className="label-code text-content-muted">
+              <Wand2 size={12} className="mr-1 inline text-brand" />
+              Slide {index + 1} de {slides.length} — exporta em {width}×{height}
+            </span>
+            {isCarousel && (
+              <button type="button" className="btn-ghost" onClick={downloadCurrent} disabled={Boolean(busy)}>
+                <Download size={12} />
+                Baixar só este slide
+              </button>
+            )}
+          </div>
+
+          <div className="panel flex items-center justify-center p-3">
+            <canvas
+              ref={canvasRef}
+              onPointerDown={startDrag}
+              onPointerMove={dragPhoto}
+              onPointerUp={endDrag}
+              onPointerCancel={endDrag}
+              className={`h-auto touch-none rounded shadow-2xl ${
+                spec.photoUrl ? (dragging ? 'cursor-grabbing' : 'cursor-grab') : ''
+              }`}
+              // Maior possível sem passar da altura da tela: o slide inteiro sempre visível.
+              style={{ aspectRatio: `${width}/${height}`, width: `min(100%, calc((100vh - 9rem) * ${width / height}))` }}
+              title={spec.photoUrl ? 'Arraste para reposicionar a foto' : undefined}
+            />
+          </div>
+
+          {message && (
+            <p className="panel p-3 text-sm text-content-muted">
+              {message}{' '}
+              {message.includes('Posts Detalhados') && (
+                <Link to="/posts" className="text-brand-soft underline">
+                  Abrir Posts Detalhados
+                </Link>
+              )}
+            </p>
+          )}
+
+          {renderError && <ErrorState message={renderError} />}
+
+          <p className="text-sm text-content-muted">
+            As margens seguem a safe zone do Instagram: 72 px nas laterais e {spec.ratio === 'RATIO_1_1' ? '96' : '150'} px
+            no topo e na base, para nada ficar sob a interface do app.
+          </p>
+        </div>
+
+        {/* Aparência: formato, layout, foto e fundo. Na tela larga vira a terceira coluna. */}
+        <div className="flex flex-col gap-4 lg:col-span-5 xl:col-span-3">
+          <section className="panel flex flex-col gap-3 p-4">
+            <span className="label-code text-brand-soft">Formato e layout</span>
+
+            <div className="grid grid-cols-2 gap-2">
+              {(['RATIO_4_5', 'RATIO_1_1'] as Ratio[]).map((ratio) => (
+                <button
+                  key={ratio}
+                  type="button"
+                  onClick={() => setRatio(ratio)}
+                  className={`label-code rounded px-3 py-2 transition ${
+                    spec.ratio === ratio ? 'bg-brand text-brand-ink' : 'bg-surface-high text-content-muted'
+                  }`}
+                >
+                  {ratio === 'RATIO_4_5' ? '1080×1350 (4:5)' : '1080×1080 (1:1)'}
+                </button>
+              ))}
+            </div>
+
+            <div className="grid grid-cols-3 gap-2">
+              {LAYOUTS.map((layout) => (
+                <button
+                  key={layout.id}
+                  type="button"
+                  title={layout.hint}
+                  onClick={() => update('layout', layout.id as LayoutId)}
+                  className={`label-code rounded px-3 py-2 transition ${
+                    spec.layout === layout.id ? 'bg-brand text-brand-ink' : 'bg-surface-high text-content-muted'
+                  }`}
+                >
+                  {layout.label}
+                </button>
+              ))}
+            </div>
+
+            <label className="flex items-center justify-between gap-3 text-sm text-content-muted">
+              Véu de legibilidade
+              <input
+                type="range"
+                min={0}
+                max={1}
+                step={0.05}
+                value={spec.scrim}
+                onChange={(event) => update('scrim', Number(event.target.value))}
+                className="w-40 accent-brand"
+              />
+            </label>
+
+            <label className="flex items-center gap-2 text-sm text-content-muted">
+              <input
+                type="checkbox"
+                checked={spec.showLogo}
+                onChange={(event) => update('showLogo', event.target.checked)}
+                className="accent-brand"
+              />
+              Mostrar selo JH no topo
+            </label>
+          </section>
+
           <PhotoPicker
             photoUrl={spec.photoUrl}
             photoMode={spec.photoMode}
@@ -926,7 +982,7 @@ export function PostStudioPage() {
               </p>
             )}
 
-            <div className="grid max-h-80 grid-cols-4 gap-2 overflow-y-auto">
+            <div className="grid max-h-96 grid-cols-3 gap-2 overflow-y-auto">
               {templates.map((asset: TemplateAsset) => (
                 <button
                   key={asset.id}
@@ -971,54 +1027,6 @@ export function PostStudioPage() {
           </section>
         </div>
 
-        {/* Prévia */}
-        <div className="flex flex-col gap-3 lg:col-span-7">
-          <div className="flex items-center justify-between">
-            <span className="label-code text-content-muted">
-              <Wand2 size={12} className="mr-1 inline text-brand" />
-              Slide {index + 1} de {slides.length} — exporta em {width}×{height}
-            </span>
-            {isCarousel && (
-              <button type="button" className="btn-ghost" onClick={downloadCurrent} disabled={Boolean(busy)}>
-                <Download size={12} />
-                Baixar só este slide
-              </button>
-            )}
-          </div>
-
-          <div className="panel flex items-center justify-center p-4">
-            <canvas
-              ref={canvasRef}
-              onPointerDown={startDrag}
-              onPointerMove={dragPhoto}
-              onPointerUp={endDrag}
-              onPointerCancel={endDrag}
-              className={`h-auto w-full max-w-[33rem] touch-none 2xl:max-w-[42rem] rounded shadow-2xl ${
-                spec.photoUrl ? (dragging ? 'cursor-grabbing' : 'cursor-grab') : ''
-              }`}
-              style={{ aspectRatio: `${width}/${height}` }}
-              title={spec.photoUrl ? 'Arraste para reposicionar a foto' : undefined}
-            />
-          </div>
-
-          {message && (
-            <p className="panel p-3 text-sm text-content-muted">
-              {message}{' '}
-              {message.includes('Posts Detalhados') && (
-                <Link to="/posts" className="text-brand-soft underline">
-                  Abrir Posts Detalhados
-                </Link>
-              )}
-            </p>
-          )}
-
-          {renderError && <ErrorState message={renderError} />}
-
-          <p className="text-sm text-content-muted">
-            As margens seguem a safe zone do Instagram: 72 px nas laterais e {spec.ratio === 'RATIO_1_1' ? '96' : '150'} px
-            no topo e na base, para nada ficar sob a interface do app.
-          </p>
-        </div>
       </div>
       )}
     </>
