@@ -36,7 +36,7 @@ import {
   type TextScale,
 } from '../editor/layouts';
 import { ensureFonts } from '../editor/canvas';
-import type { Post, TemplateAsset } from '../types/api';
+import type { CopyEntry, Post, TemplateAsset } from '../types/api';
 import { assetUrl } from '../api/assetUrl';
 
 const FIRST_SLIDE: PostSpec = {
@@ -88,6 +88,51 @@ function lerSlidesSalvos(spec: string | null): PostSpec[] | null {
   } catch {
     return null;
   }
+}
+
+/**
+ * Um carrossel montado do conteúdo do post: capa com título, chapéu e resumo; depois um slide
+ * por parágrafo da legenda (a do Guia de Copy ligada ao post, se houver, senão a do post), com
+ * a primeira frase como manchete; a CTA no último. Respeita a quantidade de slides do post.
+ */
+function slidesDoPost(post: Post, base: PostSpec, copies: CopyEntry[]): PostSpec[] {
+  const copy = copies.find((entry) => entry.postCode === post.code);
+  const paragrafos = (copy?.body ?? post.caption ?? '')
+    .split(/\n\s*\n/)
+    .map((p) => p.replace(/#\S+/g, '').trim()) // hashtags não vão para a arte
+    .filter(Boolean);
+
+  const capa: PostSpec = {
+    ...base,
+    eyebrow: post.brandPillar ?? copy?.strategy ?? base.eyebrow,
+    headline: post.title,
+    body: post.summary ?? '',
+  };
+  const cta = post.ctaLabel ?? copy?.cta ?? base.cta;
+  if (post.format !== 'CARROSSEL') {
+    return [{ ...capa, cta, badge: `JH-${post.code}` }];
+  }
+
+  // O que o post pede (ou já tem), senão um slide por parágrafo; até 10, o limite do Instagram.
+  const total = Math.min(10, Math.max(2, post.slides.length || post.slideCount || paragrafos.length + 1));
+  const internos: PostSpec[] = Array.from({ length: total - 1 }, (_, i) => {
+    // Sobrou parágrafo? Vai junto no último slide em vez de ser perdido.
+    const texto = i === total - 2 ? paragrafos.slice(i).join('\n\n') : paragrafos[i] ?? '';
+    const [primeira, ...resto] = texto.split(/(?<=[.:!?])\s+/);
+    return {
+      ...base,
+      layout: 'SLIDE',
+      eyebrow: capa.eyebrow,
+      headline: resto.length ? primeira.replace(/[.:]$/, '').slice(0, 70) : '',
+      body: resto.length ? resto.join(' ') : texto,
+    };
+  });
+
+  return [capa, ...internos].map((slide, i, todos) => ({
+    ...slide,
+    badge: `${i + 1}/${todos.length}`,
+    cta: i === todos.length - 1 ? cta : '',
+  }));
 }
 
 /** Desenha um slide fora da tela e devolve o PNG. */
@@ -469,44 +514,18 @@ export function PostStudioPage() {
       return;
     }
 
-    // Posts salvos antes de o editor guardar os slides: só dá para recuperar o primeiro texto.
-    setSlides((current) => {
-      const base = current[0];
-      const count = Math.max(1, post.slides.length || post.slideCount);
-      return Array.from({ length: count }, (_, i) => ({
-        ...base,
-        eyebrow: post.brandPillar ?? base.eyebrow,
-        headline: i === 0 ? post.title : '',
-        body: i === 0 ? post.summary ?? '' : '',
-        cta: i === count - 1 ? post.ctaLabel ?? base.cta : '',
-        badge: count > 1 ? `${i + 1}/${count}` : `JH-${post.code}`,
-        layout: i === 0 ? base.layout : 'SLIDE',
-      }));
-    });
+    // Sem slides guardados (post criado fora do editor, ou salvo antes disso): monta a partir do post.
+    const montados = slidesDoPost(post, slides[0], copies.data ?? []);
+    setSlides(montados);
     setMessage(
-      `Rascunho ${post.code} aberto no editor. Ele foi salvo antes de o editor guardar os slides: só o ` +
-        'primeiro texto voltou, e as artes serão regeradas quando você salvar de novo.',
+      `Post ${post.code} aberto no editor: ${montados.length} slide(s) montados com título, resumo, ` +
+        'legenda e CTA do post. Revise as manchetes — salvar atualiza este mesmo post.',
     );
   }
 
   function loadFromPost(code: string) {
     const post = posts.data?.find((item) => item.code === code);
-    if (!post) return;
-    setSourcePost(post.id);
-    setSlides((current) =>
-      current.map((item, i) =>
-        i === index
-          ? {
-              ...item,
-              eyebrow: post.brandPillar ?? item.eyebrow,
-              headline: post.title,
-              body: post.summary ?? '',
-              cta: post.ctaLabel ?? item.cta,
-              badge: `JH-${post.code}`,
-            }
-          : item,
-      ),
-    );
+    if (post) openDraft(post);
   }
 
   const { width, height } = canvasSize(spec.ratio);
