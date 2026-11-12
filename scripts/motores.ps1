@@ -4,8 +4,8 @@
 # alcança. O backend pede cada etapa por HTTP (porta 8095, só desta máquina) e os dois lados
 # leem e gravam os arquivos na mesma pasta: backend\uploads\video.
 #
-# Os motores acompanham o Docker: ligam quando o backend está no ar e se desligam sozinhos
-# quando ele some (Docker Desktop fechado), devolvendo a memória. Ligar e desligar com o
+# Os motores acompanham o contêiner do planner: ligam quando ele está rodando e se desligam
+# sozinhos quando ele para (ou o Docker Desktop fecha), devolvendo a memória. Ligar e desligar com o
 # Docker aberto é o botão "Motores de IA" do Video Studio.
 #
 # Uso:
@@ -23,17 +23,17 @@ param(
 $ErrorActionPreference = 'Stop'
 $raiz = Split-Path $PSScriptRoot -Parent
 $tarefa = 'JH.COMP motores'
-$portaBackend = 8081
+$conteiner = 'b2bplanner-backend-1'
 
 function EstaOuvindo([int]$porta) {
     [bool](Get-NetTCPConnection -LocalPort $porta -State Listen -ErrorAction SilentlyContinue)
 }
 
-# Conecta de verdade, como o vigia do servidor faz: a porta publicada pelo Docker pode não
-# aparecer como "escutando" para o Windows, mas atende.
-function Responde([int]$porta) {
-    $cliente = New-Object System.Net.Sockets.TcpClient
-    try { $cliente.ConnectAsync('127.0.0.1', $porta).Wait(2000) -and $cliente.Connected } catch { $false } finally { $cliente.Dispose() }
+# Pergunta ao Docker pelo contêiner do planner, e não "alguém responde na 8081?": outro
+# backend nessa porta religaria os motores à toa. Docker fechado também dá "não".
+function PlannerRodando {
+    $estado = docker inspect -f '{{.State.Running}}' $conteiner 2>$null
+    $LASTEXITCODE -eq 0 -and "$estado".Trim() -eq 'true'
 }
 
 if ($NaoIniciarAoEntrar -or $IniciarAoEntrar) {
@@ -72,8 +72,8 @@ if (EstaOuvindo 8095) {
     if (-not $Oculto) { Write-Host 'O servidor de motores já está rodando (porta 8095).' }
     return
 }
-# Sem o backend, não há quem chame os motores: ligar agora só prenderia memória.
-if ($Oculto -and -not (Responde $portaBackend)) {
+# Sem o backend do planner, não há quem chame os motores: ligar agora só prenderia memória.
+if ($Oculto -and -not (PlannerRodando)) {
     return
 }
 
@@ -84,7 +84,7 @@ if (-not $chave) { throw 'Falta VIDEO_ENGINE_KEY no .env (a mesma chave que o ba
 $env:MOTORES_CHAVE = $chave.Trim()
 $env:MOTORES_PORTA = '8095'
 $env:MOTORES_PASTA = Join-Path $raiz 'backend\uploads\video'
-$env:MOTORES_BACKEND_PORTA = "$portaBackend"
+$env:MOTORES_CONTEINER = $conteiner
 New-Item -ItemType Directory -Force $env:MOTORES_PASTA | Out-Null
 
 # Cada motor recebe os nomes de arquivo relativos à pasta do projeto, que é o diretório
@@ -93,15 +93,25 @@ $env:MOTOR_LEGENDAS = 'C:\engines\transcrever.bat {audio} {out}'
 $env:MOTOR_VOZ = 'wsl -d Ubuntu --exec /opt/engines/voz.sh {text} {out}'
 $env:MOTOR_LIPSYNC = 'wsl -d Ubuntu --exec /opt/engines/lipsync.sh {video} {audio} {out}'
 
-# Roda direto do código-fonte (Java 21), sem build: o servidor só usa o JDK.
+# Compilado uma vez e de novo só quando o arquivo muda: rodar direto do fonte carregaria o
+# compilador inteiro na memória (122 MB contra 47 MB, medido). O servidor só usa o JDK.
 $fonte = Join-Path $raiz 'backend\src\main\java\br\com\jhcomp\planner\video\motores\ServidorMotores.java'
+$classes = Join-Path $raiz 'backend\target\motores'
+$compilado = Join-Path $classes 'br\com\jhcomp\planner\video\motores\ServidorMotores.class'
+if (-not (Test-Path $compilado) -or (Get-Item $fonte).LastWriteTime -gt (Get-Item $compilado).LastWriteTime) {
+    javac -d $classes $fonte
+    if ($LASTEXITCODE -ne 0) { throw 'Não foi possível compilar o servidor de motores.' }
+}
+# Heap pequeno e um compilador JIT só: o servidor não faz conta, só repassa pedidos.
+$jvm = "-Xmx16m -Xss256k -XX:+UseSerialGC -XX:TieredStopAtLevel=1 -XX:CICompilerCount=1 " +
+       "-XX:ReservedCodeCacheSize=8m -XX:MaxMetaspaceSize=32m -cp `"$classes`" br.com.jhcomp.planner.video.motores.ServidorMotores"
 if ($Oculto) {
     $logs = Join-Path $raiz 'backend\logs'
     New-Item -ItemType Directory -Force $logs | Out-Null
     # O java segue sozinho e este PowerShell termina: nada além do servidor fica na memória.
-    Start-Process java -ArgumentList "`"$fonte`"" -WindowStyle Hidden `
+    Start-Process java -ArgumentList $jvm -WindowStyle Hidden `
         -RedirectStandardOutput (Join-Path $logs 'motores.log') `
         -RedirectStandardError (Join-Path $logs 'motores-erros.log')
 } else {
-    java $fonte
+    Start-Process java -ArgumentList $jvm -NoNewWindow -Wait
 }

@@ -102,18 +102,21 @@ public final class ServidorMotores {
         System.out.println("Motores no ar em 127.0.0.1:" + porta + " — etapas " + modelos.keySet()
                 + ", pasta " + servidor.pasta);
 
-        int portaBackend = Integer.parseInt(ambiente("MOTORES_BACKEND_PORTA", "0"));
-        if (portaBackend > 0) {
-            servidor.vigiarBackend(portaBackend, Duration.ofSeconds(Long.parseLong(ambiente("MOTORES_VIGIA_SEG", "30"))));
+        String conteiner = ambiente("MOTORES_CONTEINER", "");
+        if (!conteiner.isBlank()) {
+            servidor.vigiarBackend(conteiner, Duration.ofSeconds(Long.parseLong(ambiente("MOTORES_VIGIA_SEG", "30"))));
         }
     }
 
     /**
-     * Sai quando o backend some — o Docker Desktop foi fechado —, para não deixar memória presa
-     * com ninguém para chamar. Duas checagens seguidas sem resposta, para um restart do
+     * Sai quando o contêiner do backend para — ou o Docker Desktop é fechado —, para não deixar
+     * memória presa com ninguém para chamar. Duas checagens seguidas, para um restart do
      * contêiner não derrubar os motores. Quem liga de novo é a checagem do motores.ps1.
+     *
+     * <p>Pergunta ao Docker pelo contêiner, e não "alguém responde na porta 8081?": outro
+     * backend nessa porta manteria os motores ligados à toa.</p>
      */
-    void vigiarBackend(int portaBackend, Duration intervalo) {
+    void vigiarBackend(String conteiner, Duration intervalo) {
         Thread vigia = new Thread(() -> {
             int falhas = 0;
             while (falhas < 2) {
@@ -122,25 +125,36 @@ public final class ServidorMotores {
                 } catch (InterruptedException ex) {
                     return;
                 }
-                falhas = respondeLocal(portaBackend) ? 0 : falhas + 1;
+                falhas = conteinerRodando(conteiner) ? 0 : falhas + 1;
             }
             synchronized (this) {
                 if (atual != null) {
                     encerrar(atual.processo());
                 }
             }
-            System.out.println("Backend fora do ar (Docker fechado?): motores desligados.");
+            System.out.println("Contêiner " + conteiner + " parado (ou Docker fechado): motores desligados.");
             System.exit(0);
         }, "motor-vigia-backend");
         vigia.setDaemon(true);
         vigia.start();
     }
 
-    private static boolean respondeLocal(int porta) {
-        try (java.net.Socket socket = new java.net.Socket()) {
-            socket.connect(new InetSocketAddress(InetAddress.getLoopbackAddress(), porta), 2_000);
-            return true;
+    /** Docker fechado, contêiner parado ou inexistente: tudo conta como "não rodando". */
+    static boolean conteinerRodando(String conteiner) {
+        try {
+            Process docker = new ProcessBuilder("docker", "inspect", "-f", "{{.State.Running}}", conteiner)
+                    .redirectErrorStream(true)
+                    .start();
+            String saida = new String(docker.getInputStream().readAllBytes(), StandardCharsets.UTF_8).trim();
+            if (!docker.waitFor(15, TimeUnit.SECONDS)) {
+                docker.destroyForcibly();
+                return false;
+            }
+            return docker.exitValue() == 0 && saida.equals("true");
         } catch (IOException ex) {
+            return false;
+        } catch (InterruptedException ex) {
+            Thread.currentThread().interrupt();
             return false;
         }
     }
