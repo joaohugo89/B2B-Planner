@@ -63,13 +63,39 @@ export interface PostSpec {
   scrim: number;
 }
 
-export const LAYOUTS: { id: LayoutId; label: string; hint: string }[] = [
-  { id: 'HERO', label: 'Hero', hint: 'Manchete grande + apoio + faixa de CTA' },
-  { id: 'TOPICOS', label: 'Tópicos', hint: 'Manchete + lista numerada de pontos' },
-  { id: 'SLIDE', label: 'Slide', hint: 'Capa de carrossel com indicador e texto corrido' },
-  { id: 'CITACAO', label: 'Citação', hint: 'Manchete como frase em destaque, apoio como autor' },
-  { id: 'NUMERO', label: 'Número', hint: 'Manchete como dado gigante (ex.: 12h, 3x, 87%), apoio explica' },
+/**
+ * O que cada layout desenha, para o editor mostrar só os campos que aparecem na arte e com
+ * o nome do papel que eles têm ali. body null = o layout não usa o apoio.
+ */
+export interface LayoutFields {
+  headline: string;
+  headlinePlaceholder: string;
+  body: string | null;
+  bodyPlaceholder?: string;
+  bodyRows?: number;
+  bullets?: boolean;
+}
+
+export const LAYOUTS: { id: LayoutId; label: string; hint: string; fields: LayoutFields }[] = [
+  { id: 'HERO', label: 'Hero', hint: 'Manchete grande + apoio + faixa de CTA',
+    fields: { headline: 'Manchete', headlinePlaceholder: 'A ideia principal, em poucas palavras',
+      body: 'Apoio', bodyPlaceholder: 'Uma ou duas frases que completam a manchete' } },
+  { id: 'TOPICOS', label: 'Tópicos', hint: 'Manchete + lista numerada de pontos',
+    fields: { headline: 'Manchete', headlinePlaceholder: 'O que a lista entrega', body: null, bullets: true } },
+  { id: 'SLIDE', label: 'Slide', hint: 'Manchete + texto corrido num quadro',
+    fields: { headline: 'Manchete', headlinePlaceholder: 'Título do slide',
+      body: 'Texto do slide', bodyPlaceholder: 'O conteúdo do slide; pode ter alguns parágrafos', bodyRows: 5 } },
+  { id: 'CITACAO', label: 'Citação', hint: 'Frase em destaque com autor',
+    fields: { headline: 'Frase', headlinePlaceholder: 'A frase que vai entre aspas',
+      body: 'Autor', bodyPlaceholder: 'Quem disse (nome, cargo)', bodyRows: 1 } },
+  { id: 'NUMERO', label: 'Número', hint: 'Um dado gigante e o que ele significa',
+    fields: { headline: 'Número em destaque', headlinePlaceholder: 'Ex.: 12h, 3x, 87%',
+      body: 'O que o número significa', bodyPlaceholder: 'Ex.: por semana perdidas com follow-up manual' } },
 ];
+
+export function layoutFields(id: LayoutId): LayoutFields {
+  return (LAYOUTS.find((layout) => layout.id === id) ?? LAYOUTS[0]).fields;
+}
 
 export function canvasSize(ratio: Ratio): { width: number; height: number } {
   return ratio === 'RATIO_1_1' ? { width: 1080, height: 1080 } : { width: 1080, height: 1350 };

@@ -30,6 +30,7 @@ import {
   LAYOUTS,
   renderPost,
   type LayoutId,
+  layoutFields,
   type PostSpec,
   type Ratio,
   type TextScale,
@@ -122,6 +123,7 @@ export function PostStudioPage() {
   const [dragging, setDragging] = useState(false);
 
   const spec = slides[index] ?? slides[0];
+  const campos = layoutFields(spec.layout);
   const draftCount = (posts.data ?? []).filter((post) => post.status === 'RASCUNHO').length;
   const isCarousel = slides.length > 1;
 
@@ -734,8 +736,49 @@ export function PostStudioPage() {
             )}
 
             <Field label="Chapéu (linha vermelha)" value={spec.eyebrow} onChange={(v) => update('eyebrow', v)} />
-            <TextArea label="Manchete" value={spec.headline} onChange={(v) => update('headline', v)} rows={2} />
-            <TextArea label="Apoio" value={spec.body} onChange={(v) => update('body', v)} rows={3} />
+            <TextArea
+              label={campos.headline}
+              placeholder={campos.headlinePlaceholder}
+              value={spec.headline}
+              onChange={(v) => update('headline', v)}
+              rows={2}
+            />
+            {campos.body && (
+              <TextArea
+                label={campos.body}
+                placeholder={campos.bodyPlaceholder}
+                value={spec.body}
+                onChange={(v) => update('body', v)}
+                rows={campos.bodyRows ?? 3}
+              />
+            )}
+            {campos.bullets && (
+              <div className="flex flex-col gap-2">
+                <span className="label-code text-content-muted">Tópicos — use “Título | detalhe”</span>
+                {spec.bullets.map((bullet, i) => (
+                  <div key={i} className="flex items-center gap-2">
+                    <input
+                      value={bullet}
+                      onChange={(event) => {
+                        const next = [...spec.bullets];
+                        next[i] = event.target.value;
+                        update('bullets', next);
+                      }}
+                      className="flex-1 rounded bg-surface-lowest px-3 py-2 text-sm outline-none"
+                    />
+                    <button type="button" className="btn-ghost" onClick={() => update('bullets', spec.bullets.filter((_, j) => j !== i))}>
+                      <Trash2 size={12} />
+                    </button>
+                  </div>
+                ))}
+                {spec.bullets.length < 5 && (
+                  <button type="button" className="btn-ghost self-start" onClick={() => update('bullets', [...spec.bullets, ''])}>
+                    <Plus size={12} />
+                    Adicionar tópico
+                  </button>
+                )}
+              </div>
+            )}
 
             <div className="grid grid-cols-2 gap-3">
               <Field label="CTA (faixa inferior)" value={spec.cta} onChange={(v) => update('cta', v)} />
@@ -757,8 +800,15 @@ export function PostStudioPage() {
               </button>
             </div>
 
-            <SizeControl label="Manchete" value={spec.scale.headline} onAdjust={(c) => adjustScale('headline', c)} />
-            <SizeControl label="Apoio e tópicos" value={spec.scale.body} onAdjust={(c) => adjustScale('body', c)} />
+            <SizeControl label={campos.headline} value={spec.scale.headline} onAdjust={(c) => adjustScale('headline', c)} />
+            {/* Na Citação o autor segue o tamanho do chapéu: o controle de apoio não mudaria nada. */}
+            {(campos.bullets || (campos.body && spec.layout !== 'CITACAO')) && (
+              <SizeControl
+                label={campos.bullets ? 'Tópicos' : campos.body!}
+                value={spec.scale.body}
+                onAdjust={(c) => adjustScale('body', c)}
+              />
+            )}
             <SizeControl label="Chapéu, CTA e selo" value={spec.scale.label} onAdjust={(c) => adjustScale('label', c)} />
 
             <p className="text-sm text-content-muted">
@@ -839,34 +889,6 @@ export function PostStudioPage() {
 
             <p className="text-sm text-content-muted">O bloco nunca passa das margens seguras, mesmo no limite do ajuste.</p>
           </section>
-
-          {spec.layout === 'TOPICOS' && (
-            <section className="panel flex flex-col gap-3 p-4">
-              <span className="label-code text-brand-soft">Tópicos — use “Título | detalhe”</span>
-              {spec.bullets.map((bullet, i) => (
-                <div key={i} className="flex items-center gap-2">
-                  <input
-                    value={bullet}
-                    onChange={(event) => {
-                      const next = [...spec.bullets];
-                      next[i] = event.target.value;
-                      update('bullets', next);
-                    }}
-                    className="flex-1 rounded bg-surface-lowest px-3 py-2 text-sm outline-none"
-                  />
-                  <button type="button" className="btn-ghost" onClick={() => update('bullets', spec.bullets.filter((_, j) => j !== i))}>
-                    <Trash2 size={12} />
-                  </button>
-                </div>
-              ))}
-              {spec.bullets.length < 5 && (
-                <button type="button" className="btn-ghost self-start" onClick={() => update('bullets', [...spec.bullets, ''])}>
-                  <Plus size={12} />
-                  Adicionar tópico
-                </button>
-              )}
-            </section>
-          )}
 
           <PhotoPicker
             photoUrl={spec.photoUrl}
