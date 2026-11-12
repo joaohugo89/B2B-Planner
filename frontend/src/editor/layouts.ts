@@ -13,7 +13,7 @@ import {
   type PhotoTransform,
 } from './canvas';
 
-export type LayoutId = 'HERO' | 'TOPICOS' | 'SLIDE';
+export type LayoutId = 'HERO' | 'TOPICOS' | 'SLIDE' | 'CITACAO' | 'NUMERO';
 export type Ratio = 'RATIO_4_5' | 'RATIO_1_1';
 
 /** Multiplicadores de tamanho por tipo de texto (1 = tamanho padrão do layout). */
@@ -67,6 +67,8 @@ export const LAYOUTS: { id: LayoutId; label: string; hint: string }[] = [
   { id: 'HERO', label: 'Hero', hint: 'Manchete grande + apoio + faixa de CTA' },
   { id: 'TOPICOS', label: 'Tópicos', hint: 'Manchete + lista numerada de pontos' },
   { id: 'SLIDE', label: 'Slide', hint: 'Capa de carrossel com indicador e texto corrido' },
+  { id: 'CITACAO', label: 'Citação', hint: 'Manchete como frase em destaque, apoio como autor' },
+  { id: 'NUMERO', label: 'Número', hint: 'Manchete como dado gigante (ex.: 12h, 3x, 87%), apoio explica' },
 ];
 
 export function canvasSize(ratio: Ratio): { width: number; height: number } {
@@ -266,6 +268,10 @@ export async function renderPost(ctx: CanvasRenderingContext2D, spec: PostSpec):
     drawTopicos(ctx, spec, area, palette, headerBottom, contentBottom);
   } else if (spec.layout === 'SLIDE') {
     drawSlide(ctx, spec, area, palette, headerBottom, contentBottom);
+  } else if (spec.layout === 'CITACAO') {
+    drawCitacao(ctx, spec, area, palette, headerBottom, contentBottom);
+  } else if (spec.layout === 'NUMERO') {
+    drawNumero(ctx, spec, area, palette, headerBottom, contentBottom);
   } else {
     drawHero(ctx, spec, area, palette, headerBottom, contentBottom);
   }
@@ -657,4 +663,100 @@ function drawSlide(
       maxLines: Math.max(1, Math.floor((boxHeight - padding * 2) / bodyLine)),
     });
   }
+}
+
+/** Frase em destaque: aspas gigantes da marca, a manchete em caixa normal e o apoio como autor. */
+function drawCitacao(
+  ctx: CanvasRenderingContext2D,
+  spec: PostSpec,
+  area: Area,
+  palette: Palette,
+  headerBottom: number,
+  contentBottom: number,
+) {
+  const { headline: hScale, label: lScale } = resolveScale(spec);
+  const { x, align } = textAnchor(spec, area);
+  const quoteFont = (size: number) => `700 ${size}px ${FONTS.display}`;
+  const size = fitFontSize(ctx, spec.headline, quoteFont, area.innerWidth, Math.round(64 * hScale), 32, 6);
+  const lineHeight = Math.round(size * 1.18);
+  const markSize = 160;
+  const authorFont = `700 ${Math.round(28 * lScale)}px ${FONTS.mono}`;
+  const authorLine = Math.round(36 * lScale);
+
+  const eyebrowHeight = spec.eyebrow.trim() ? Math.round(32 * lScale) + 14 : 0;
+  const quoteHeight = Math.min(measureTextBlock(ctx, spec.headline, quoteFont(size), area.innerWidth, lineHeight), lineHeight * 6);
+  const authorHeight = spec.body.trim() ? authorLine * 2 + 36 : 0;
+  const total = eyebrowHeight + markSize * 0.62 + quoteHeight + authorHeight;
+  let y = placeBlock(spec, headerBottom + 48, contentBottom, total);
+
+  y += drawEyebrow(ctx, spec.eyebrow, x, y, area.innerWidth, spec.theme, lScale, align);
+  if (spec.eyebrow.trim()) y += 14;
+
+  ctx.save();
+  ctx.font = `800 ${markSize}px ${FONTS.display}`;
+  ctx.fillStyle = palette.accent;
+  ctx.textAlign = align;
+  ctx.textBaseline = 'top';
+  ctx.fillText('“', x, y - markSize * 0.12);
+  ctx.restore();
+  y += markSize * 0.62;
+
+  y += drawTextBlock(ctx, {
+    text: spec.headline, x, y, maxWidth: area.innerWidth, font: quoteFont(size),
+    color: palette.text, lineHeight, align, maxLines: 6,
+  });
+
+  if (spec.body.trim()) {
+    y += 36;
+    drawTextBlock(ctx, {
+      text: `— ${spec.body}`, x, y, maxWidth: area.innerWidth, font: authorFont,
+      color: palette.accent, lineHeight: authorLine, align, letterSpacing: '1px', uppercase: true, maxLines: 2,
+    });
+  }
+}
+
+/** Dado em destaque: a manchete vira um número gigante na cor da marca, o apoio explica. */
+function drawNumero(
+  ctx: CanvasRenderingContext2D,
+  spec: PostSpec,
+  area: Area,
+  palette: Palette,
+  headerBottom: number,
+  contentBottom: number,
+) {
+  const { headline: hScale, body: bScale, label: lScale } = resolveScale(spec);
+  const { x, align } = textAnchor(spec, area);
+  const numberFont = (size: number) => `800 ${size}px ${FONTS.display}`;
+  const size = fitFontSize(ctx, spec.headline.toUpperCase(), numberFont, area.innerWidth, Math.round(260 * hScale), 72, 2);
+  const lineHeight = Math.round(size * 0.98);
+  const bodyFont = `600 ${Math.round(40 * bScale)}px ${FONTS.body}`;
+  const bodyLine = Math.round(54 * bScale);
+
+  const eyebrowHeight = spec.eyebrow.trim() ? Math.round(32 * lScale) + 20 : 0;
+  const numberHeight = Math.min(measureTextBlock(ctx, spec.headline, numberFont(size), area.innerWidth, lineHeight, true), lineHeight * 2);
+  const bodyHeight = Math.min(measureTextBlock(ctx, spec.body, bodyFont, area.innerWidth, bodyLine), bodyLine * 5);
+  const total = eyebrowHeight + numberHeight + 40 + (bodyHeight ? bodyHeight + 36 : 0);
+  let y = placeBlock(spec, headerBottom + 48, contentBottom, total);
+
+  y += drawEyebrow(ctx, spec.eyebrow, x, y, area.innerWidth, spec.theme, lScale, align);
+  if (spec.eyebrow.trim()) y += 20;
+
+  y += drawTextBlock(ctx, {
+    text: spec.headline, x, y, maxWidth: area.innerWidth, font: numberFont(size),
+    color: palette.accent, lineHeight, align, uppercase: true, maxLines: 2,
+  });
+
+  y += 24;
+  const ruleX = align === 'center' ? x - 60 : area.side;
+  ctx.save();
+  ctx.fillStyle = palette.text;
+  ctx.fillRect(ruleX, y, 120, 6);
+  ctx.restore();
+  y += 42;
+
+  drawTextBlock(ctx, {
+    text: spec.body, x, y, maxWidth: area.innerWidth, font: bodyFont,
+    color: palette.text, lineHeight: bodyLine, align,
+    maxLines: Math.max(1, Math.min(5, Math.floor((contentBottom - y) / bodyLine))),
+  });
 }

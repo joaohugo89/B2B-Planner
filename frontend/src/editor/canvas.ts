@@ -168,7 +168,7 @@ function wrapLines(ctx: CanvasRenderingContext2D, text: string, maxWidth: number
       continue;
     }
     let current = '';
-    for (const word of paragraph.split(/\s+/)) {
+    for (const word of paragraph.split(/\s+/).flatMap((w) => splitLongWord(ctx, w, maxWidth))) {
       const candidate = current ? `${current} ${word}` : word;
       if (ctx.measureText(candidate).width <= maxWidth || !current) {
         current = candidate;
@@ -181,6 +181,22 @@ function wrapLines(ctx: CanvasRenderingContext2D, text: string, maxWidth: number
   }
 
   return lines;
+}
+
+/** Palavra mais larga que a linha (um link, "aaaa…") é cortada em pedaços que cabem, senão vaza da arte. */
+function splitLongWord(ctx: CanvasRenderingContext2D, word: string, maxWidth: number): string[] {
+  if (ctx.measureText(word).width <= maxWidth) return [word];
+  const parts: string[] = [];
+  let part = '';
+  for (const char of word) {
+    if (part && ctx.measureText(part + char).width > maxWidth) {
+      parts.push(part);
+      part = '';
+    }
+    part += char;
+  }
+  if (part) parts.push(part);
+  return parts;
 }
 
 interface TextBlockOptions {
