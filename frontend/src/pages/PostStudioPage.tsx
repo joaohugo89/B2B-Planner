@@ -74,6 +74,21 @@ function slugify(text: string): string {
   );
 }
 
+/**
+ * Os slides guardados no post, completados com o padrão para campos que não existiam quando
+ * foram salvos. Qualquer coisa fora do formato vale como "não há slides salvos".
+ */
+function lerSlidesSalvos(spec: string | null): PostSpec[] | null {
+  if (!spec) return null;
+  try {
+    const lidos: unknown = JSON.parse(spec);
+    if (!Array.isArray(lidos) || lidos.length === 0) return null;
+    return lidos.map((slide) => ({ ...FIRST_SLIDE, ...(slide as Partial<PostSpec>) }));
+  } catch {
+    return null;
+  }
+}
+
 /** Desenha um slide fora da tela e devolve o PNG. */
 async function renderToBlob(spec: PostSpec): Promise<Blob> {
   const { width, height } = canvasSize(spec.ratio);
@@ -360,6 +375,8 @@ export function PostStudioPage() {
         scheduledAt: target?.scheduledAt ?? null,
         estimatedReach: target?.estimatedReach ?? null,
         estimatedSaves: target?.estimatedSaves ?? null,
+        // Os slides como estão no editor, para o rascunho reabrir igual — não só o PNG.
+        editorSpec: JSON.stringify(slides),
       };
 
       const saved = target ? await postsApi.update(target.id, payload) : await postsApi.create(payload);
@@ -433,6 +450,24 @@ export function PostStudioPage() {
   function openDraft(post: Post) {
     setSourcePost(post.id);
     setIndex(0);
+
+    const salvos = lerSlidesSalvos(post.editorSpec);
+    if (salvos) {
+      // Título, resumo, chapéu e CTA podem ter sido editados nos Posts Detalhados depois de
+      // salvar aqui: o post é a versão atual, e salvar de novo não pode desfazer a edição.
+      salvos[0] = {
+        ...salvos[0],
+        headline: post.title,
+        eyebrow: post.brandPillar ?? salvos[0].eyebrow,
+        body: post.summary ?? salvos[0].body,
+        cta: post.ctaLabel ?? salvos[0].cta,
+      };
+      setSlides(salvos);
+      setMessage(`Rascunho ${post.code} aberto no editor, com os ${salvos.length} slide(s) como você deixou.`);
+      return;
+    }
+
+    // Posts salvos antes de o editor guardar os slides: só dá para recuperar o primeiro texto.
     setSlides((current) => {
       const base = current[0];
       const count = Math.max(1, post.slides.length || post.slideCount);
@@ -447,7 +482,8 @@ export function PostStudioPage() {
       }));
     });
     setMessage(
-      `Rascunho ${post.code} aberto no editor. As artes serão regeradas quando você salvar de novo.`,
+      `Rascunho ${post.code} aberto no editor. Ele foi salvo antes de o editor guardar os slides: só o ` +
+        'primeiro texto voltou, e as artes serão regeradas quando você salvar de novo.',
     );
   }
 

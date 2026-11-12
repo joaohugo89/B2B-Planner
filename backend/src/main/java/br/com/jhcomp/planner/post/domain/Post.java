@@ -91,6 +91,10 @@ public class Post extends BaseEntity {
     @Column(name = "publish_previous_status", length = 32)
     private PostStatus publishPreviousStatus;
 
+    /** Os slides como o Editor de Posts os montou (JSON do frontend), para reabrir e editar. */
+    @Column(name = "editor_spec", columnDefinition = "text")
+    private String editorSpec;
+
     /** Artes do carrossel, na ordem de publicação. Um post estático tem um único slide. */
     @ElementCollection(fetch = FetchType.EAGER)
     @CollectionTable(name = "post_slides", joinColumns = @JoinColumn(name = "post_id"))
@@ -168,6 +172,9 @@ public class Post extends BaseEntity {
 
     public PostStatus getPublishPreviousStatus() { return publishPreviousStatus; }
     public void setPublishPreviousStatus(PostStatus status) { this.publishPreviousStatus = status; }
+
+    public String getEditorSpec() { return editorSpec; }
+    public void setEditorSpec(String editorSpec) { this.editorSpec = editorSpec; }
 
     public List<String> getSlides() { return slides; }
 

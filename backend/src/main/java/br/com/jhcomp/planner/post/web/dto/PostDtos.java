@@ -37,7 +37,8 @@ public final class PostDtos {
             Instant publishedAt,
             /** Progresso da publicação em segundo plano: PUBLICANDO, CONCLUIDO, ERRO ou nulo. */
             br.com.jhcomp.planner.post.domain.PublishState publishState,
-            String publishError) {
+            String publishError,
+            String editorSpec) {
 
         public static PostResponse from(Post post) {
             return new PostResponse(
@@ -61,7 +62,8 @@ public final class PostDtos {
                     post.getInstagramMediaId(),
                     post.getPublishedAt(),
                     post.getPublishState(),
-                    post.getPublishError());
+                    post.getPublishError(),
+                    post.getEditorSpec());
         }
     }
 
@@ -80,7 +82,9 @@ public final class PostDtos {
             @Size(max = 160) String ctaLabel,
             Instant scheduledAt,
             Integer estimatedReach,
-            Integer estimatedSaves) {
+            Integer estimatedSaves,
+            // Teto folgado: dez slides de texto cabem em poucos KB; acima disso é erro de quem envia.
+            @Size(max = 200_000) String editorSpec) {
     }
 
     public record StatusRequest(PostStatus status) {

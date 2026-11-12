@@ -139,5 +139,6 @@ public class PostService {
         post.setScheduledAt(request.scheduledAt());
         post.setEstimatedReach(request.estimatedReach());
         post.setEstimatedSaves(request.estimatedSaves());
+        post.setEditorSpec(request.editorSpec());
     }
 }

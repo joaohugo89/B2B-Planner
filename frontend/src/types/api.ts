@@ -33,6 +33,8 @@ export interface Post {
   /** Progresso da publicação em segundo plano; null quando nunca foi tentada. */
   publishState: PublishState | null;
   publishError: string | null;
+  /** Os slides como o Editor de Posts os montou (JSON); null em posts que não vieram do editor. */
+  editorSpec: string | null;
 }
 
 export type PublishState = 'PUBLICANDO' | 'CONCLUIDO' | 'ERRO';
